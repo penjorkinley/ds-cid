@@ -19,8 +19,8 @@ export default function SuccessMessage({
         {response.message}
       </h2>
 
-      <EmailStatus status={emailStatus} />
       <DocumentDetails response={response} />
+      <EmailStatus status={emailStatus} />
 
       <button
         onClick={onReset}

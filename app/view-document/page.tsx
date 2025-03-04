@@ -87,29 +87,44 @@ export default function ViewDocument() {
       <dl className="grid grid-cols-1 gap-4 mb-8">
         <div className="border-b pb-2">
           <dt className="font-medium text-gray-500">Document ID</dt>
-          <dd className="mt-1 font-mono">{documentData.documentId}</dd>
+          <dd className="mt-1 font-mono break-all whitespace-normal">
+            {documentData.documentId}
+          </dd>
         </div>
 
         <div className="border-b pb-2">
           <dt className="font-medium text-gray-500">Document Hash</dt>
-          <dd className="mt-1 font-mono break-all">
+          <dd className="mt-1 font-mono break-all whitespace-normal">
             {documentData.documentHash}
           </dd>
         </div>
 
         <div className="border-b pb-2">
           <dt className="font-medium text-gray-500">Name</dt>
-          <dd className="mt-1">{documentData.name}</dd>
+          <dd className="mt-1 font-mono break-all whitespace-normal">
+            {documentData.name}
+          </dd>
         </div>
 
         <div className="border-b pb-2">
           <dt className="font-medium text-gray-500">Holder DID</dt>
-          <dd className="mt-1">{documentData.holderDid}</dd>
+          <dd className="mt-1 font-mono break-all whitespace-normal">
+            {documentData.holderDid}
+          </dd>
+        </div>
+
+        <div className="border-b pb-2">
+          <dt className="font-medium text-gray-500">Document URL</dt>
+          <dd className="mt-1 font-mono break-all whitespace-normal">
+            {documentData.documentUrl}
+          </dd>
         </div>
 
         <div className="border-b pb-2">
           <dt className="font-medium text-gray-500">Organization ID</dt>
-          <dd className="mt-1">{documentData.organizationId}</dd>
+          <dd className="mt-1 font-mono break-all whitespace-normal">
+            {documentData.organizationId}
+          </dd>
         </div>
       </dl>
 
