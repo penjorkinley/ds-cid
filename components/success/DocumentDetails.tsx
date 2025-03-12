@@ -1,4 +1,4 @@
-import { UploadResponse } from "../../services/api";
+import { UploadResponse } from "../../services/ds-api";
 
 interface DocumentDetailsProps {
   response: UploadResponse;

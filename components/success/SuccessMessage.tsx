@@ -1,4 +1,4 @@
-import { UploadResponse } from "../../services/api";
+import { UploadResponse } from "../../services/ds-api";
 import DocumentDetails from "./DocumentDetails";
 import EmailStatus from "./EmailStatus";
 

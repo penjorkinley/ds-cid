@@ -1,4 +1,4 @@
-import { UploadResponse } from "@/services/api";
+import { UploadResponse } from "@/services/ds-api";
 
 export function encodeResponseData(response: UploadResponse): string {
   // Extract all fields except email and message

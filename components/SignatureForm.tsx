@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { uploadDocument, UploadResponse } from "../services/api";
+import { uploadDocument, UploadResponse } from "@/services/ds-api";
 import SuccessMessage from "./success/SuccessMessage";
 import DocumentForm from "./DocumentForm";
 
@@ -90,7 +90,7 @@ export default function SignatureForm() {
         holderDid: formData.holderDid,
         file: formData.file,
       });
-
+      console.log("Raw API Response:", result); // Check for trailing characters
       setResponse(result);
 
       // Send email with QR code

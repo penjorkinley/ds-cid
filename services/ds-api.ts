@@ -27,13 +27,12 @@ export async function uploadDocument(
   formData.append("holderDid", holderDid);
   formData.append("file", file);
 
-  const response = await fetch(
-    "https://e40c-202-144-128-70.ngrok-free.app/documents/upload",
-    {
-      method: "POST",
-      body: formData,
-    }
-  );
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  const response = await fetch(`${apiUrl}/documents/upload`, {
+    method: "POST",
+    body: formData,
+  });
 
   if (!response.ok) {
     const errorText = await response.text();

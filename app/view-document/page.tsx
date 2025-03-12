@@ -128,7 +128,7 @@ export default function ViewDocument() {
         </div>
       </dl>
 
-      {/* <div className="flex justify-center">
+      <div className="flex justify-center">
         <a
           href={documentData.documentUrl}
           target="_blank"
@@ -137,7 +137,7 @@ export default function ViewDocument() {
         >
           View Document
         </a>
-      </div> */}
+      </div>
     </div>
   );
 }

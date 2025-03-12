@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import { UploadResponse } from "@/services/api";
+import { UploadResponse } from "@/services/ds-api";
 import { encodeResponseData } from "@/utils/encoding";
 import { generateQRCode } from "@/utils/qrcode";
 
