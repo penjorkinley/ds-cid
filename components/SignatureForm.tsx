@@ -61,7 +61,7 @@ export default function SignatureForm() {
         );
       }
 
-      const emailData = await emailResponse.json();
+      // const emailData = await emailResponse.json();
       setEmailStatus("Email sent successfully to " + response.email);
     } catch (err) {
       console.error("Error sending email:", err);
