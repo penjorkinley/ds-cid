@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button";
 interface FormData {
   name: string;
   email: string;
-  holderDid: string;
+  cid: string;
   file: File | null;
 }
 
@@ -55,11 +55,11 @@ export default function DocumentForm({
       />
 
       <Input
-        id="holderDid"
-        name="holderDid"
-        value={formData.holderDid}
+        id="cid"
+        name="cid"
+        value={formData.cid}
         onChange={handleChange}
-        placeholder="Enter Recipient's Holder DID..."
+        placeholder="Enter Recipient's CID..."
         required
       />
 

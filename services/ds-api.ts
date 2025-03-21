@@ -4,7 +4,7 @@ export interface UploadResponse {
   documentUrl: string;
   name: string;
   email: string;
-  holderDid: string;
+  cid: string;
   organizationId: string;
   message: string;
 }
@@ -12,19 +12,19 @@ export interface UploadResponse {
 export interface UploadDocumentParams {
   name: string;
   email: string;
-  holderDid: string;
+  cid: string;
   file: File;
 }
 
 export async function uploadDocument(
   params: UploadDocumentParams
 ): Promise<UploadResponse> {
-  const { name, email, holderDid, file } = params;
+  const { name, email, cid, file } = params;
 
   const formData = new FormData();
   formData.append("name", name);
   formData.append("email", email);
-  formData.append("holderDid", holderDid);
+  formData.append("cid", cid);
   formData.append("file", file);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;

@@ -9,7 +9,7 @@ import DocumentForm from "./DocumentForm";
 interface FormData {
   name: string;
   email: string;
-  holderDid: string;
+  cid: string;
   file: File | null;
 }
 
@@ -17,7 +17,7 @@ export default function SignatureForm() {
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
-    holderDid: "",
+    cid: "",
     file: null,
   });
 
@@ -87,7 +87,7 @@ export default function SignatureForm() {
       const result = await uploadDocument({
         name: formData.name,
         email: formData.email,
-        holderDid: formData.holderDid,
+        cid: formData.cid,
         file: formData.file,
       });
       console.log("Raw API Response:", result); // Check for trailing characters
@@ -100,7 +100,7 @@ export default function SignatureForm() {
       setFormData({
         name: "",
         email: "",
-        holderDid: "",
+        cid: "",
         file: null,
       });
     } catch (err) {

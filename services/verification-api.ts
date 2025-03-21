@@ -1,7 +1,7 @@
 export interface VerificationApiResponse {
   name: string;
   email: string;
-  holderDid: string;
+  cid: string;
   signature: string | null;
   signedAt: string | null;
   message: string;
@@ -30,7 +30,7 @@ export const verifyDocument = async (
       return {
         name: "",
         email: "",
-        holderDid: "",
+        cid: "",
         signature: null,
         signedAt: null,
         message: (data as ErrorResponse).error || "Verification failed",
@@ -42,7 +42,7 @@ export const verifyDocument = async (
     return {
       name: "",
       email: "",
-      holderDid: "",
+      cid: "",
       signature: null,
       signedAt: null,
       message: error instanceof Error ? error.message : "Verification failed",
