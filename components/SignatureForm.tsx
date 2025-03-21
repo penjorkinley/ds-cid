@@ -11,6 +11,12 @@ interface FormData {
   email: string;
   cid: string;
   file: File | null;
+  signatureCoordinates: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null;
 }
 
 export default function SignatureForm() {
@@ -19,6 +25,7 @@ export default function SignatureForm() {
     email: "",
     cid: "",
     file: null,
+    signatureCoordinates: null,
   });
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -38,15 +45,28 @@ export default function SignatureForm() {
     setFormData((prev) => ({
       ...prev,
       file,
+      signatureCoordinates: null, // Reset coordinates when file changes
     }));
   };
 
-  const sendEmailWithQRCode = async (response: UploadResponse) => {
-    try {
-      setEmailStatus("Sending email with QR code...");
+  const setSignatureCoordinates = (coordinates: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => {
+    setFormData((prev) => ({
+      ...prev,
+      signatureCoordinates: coordinates,
+    }));
+  };
 
+  const sendEmailWithDocumentLink = async (response: UploadResponse) => {
+    try {
+      setEmailStatus("Sending email with document link...");
+
+      // Use the documentViewUrl directly from the API response
       const emailResponse = await fetch("/api/send-email", {
-        // Note: corrected the API path
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -61,7 +81,6 @@ export default function SignatureForm() {
         );
       }
 
-      // const emailData = await emailResponse.json();
       setEmailStatus("Email sent successfully to " + response.email);
     } catch (err) {
       console.error("Error sending email:", err);
@@ -73,8 +92,10 @@ export default function SignatureForm() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
     setIsSubmitting(true);
     setError(null);
     setEmailStatus(null);
@@ -84,17 +105,40 @@ export default function SignatureForm() {
         throw new Error("Please select a file to upload");
       }
 
+      if (!formData.signatureCoordinates) {
+        throw new Error("Please set a signature placeholder in the document");
+      }
+
+      // Format the coordinates as a string to send to the API
+      const signatureCoordinatesString = `x: ${formData.signatureCoordinates.x.toFixed(
+        0
+      )}, y: ${formData.signatureCoordinates.y.toFixed(
+        0
+      )}, width: ${formData.signatureCoordinates.width.toFixed(
+        0
+      )}, height: ${formData.signatureCoordinates.height.toFixed(0)}`;
+
+      // Create a FormData object to send to the API
+      const apiFormData = new FormData();
+      apiFormData.append("name", formData.name);
+      apiFormData.append("email", formData.email);
+      apiFormData.append("cid", formData.cid);
+      apiFormData.append("file", formData.file);
+      apiFormData.append("signatureCoordinates", signatureCoordinatesString);
+
       const result = await uploadDocument({
         name: formData.name,
         email: formData.email,
         cid: formData.cid,
         file: formData.file,
+        signatureCoordinates: signatureCoordinatesString,
       });
-      console.log("Raw API Response:", result); // Check for trailing characters
+
+      console.log("Raw API Response:", result);
       setResponse(result);
 
-      // Send email with QR code
-      await sendEmailWithQRCode(result);
+      // Send email with document link
+      await sendEmailWithDocumentLink(result);
 
       // Reset form
       setFormData({
@@ -102,6 +146,7 @@ export default function SignatureForm() {
         email: "",
         cid: "",
         file: null,
+        signatureCoordinates: null,
       });
     } catch (err) {
       console.error("Error submitting form:", err);
@@ -146,6 +191,7 @@ export default function SignatureForm() {
           handleChange={handleChange}
           handleFileChange={handleFileChange}
           handleSubmit={handleSubmit}
+          setSignatureCoordinates={setSignatureCoordinates}
         />
       )}
     </div>

@@ -1,13 +1,21 @@
-import React from "react";
+// components/DocumentForm.tsx
+import React, { useState } from "react";
 import Input from "@/components/ui/Input";
 import FileUpload from "@/components/ui/FileUpload";
 import Button from "@/components/ui/Button";
+import DocumentEditor from "@/components/DocumentEditor";
 
 interface FormData {
   name: string;
   email: string;
   cid: string;
   file: File | null;
+  signatureCoordinates: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null;
 }
 
 interface DocumentFormProps {
@@ -17,6 +25,12 @@ interface DocumentFormProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleFileChange: (file: File) => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  setSignatureCoordinates: (coordinates: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => void;
 }
 
 export default function DocumentForm({
@@ -26,9 +40,43 @@ export default function DocumentForm({
   handleChange,
   handleFileChange,
   handleSubmit,
+  setSignatureCoordinates,
 }: DocumentFormProps) {
+  const [showDocumentViewer, setShowDocumentViewer] = useState(false);
+  const [step, setStep] = useState(1); // Step 1: Form, Step 2: Document Viewer
+
+  const handlePlaceholderSet = (coordinates: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => {
+    setSignatureCoordinates(coordinates);
+  };
+
+  const goToDocumentViewer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.file) {
+      setShowDocumentViewer(true);
+    }
+  };
+
+  if (showDocumentViewer) {
+    return (
+      <>
+        <DocumentEditor
+          file={formData.file!}
+          onPlaceholderSet={handlePlaceholderSet}
+          onClose={() => setShowDocumentViewer(false)}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+        />
+      </>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={goToDocumentViewer} className="space-y-6">
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
           {error}
@@ -66,11 +114,10 @@ export default function DocumentForm({
       <FileUpload
         onFileSelect={handleFileChange}
         selectedFile={formData.file}
+        accept=".pdf"
       />
 
-      <Button type="submit" isLoading={isSubmitting}>
-        Submit
-      </Button>
+      <Button type="submit">Next</Button>
     </form>
   );
 }

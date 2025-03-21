@@ -5,19 +5,36 @@ import { useRef, useState } from "react";
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
+  accept?: string;
 }
 
 export default function FileUpload({
   onFileSelect,
   selectedFile,
+  accept = ".pdf,.doc,.docx,.xls,.xlsx,.txt",
 }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const validateFile = (file: File): boolean => {
+    // If accept is for PDF only
+    if (accept === ".pdf" && file.type !== "application/pdf") {
+      setError("Only PDF files are accepted");
+      return false;
+    }
+    setError(null);
+    return true;
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files[0]) {
-      onFileSelect(files[0]);
+      if (validateFile(files[0])) {
+        onFileSelect(files[0]);
+      } else if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -37,7 +54,9 @@ export default function FileUpload({
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileSelect(e.dataTransfer.files[0]);
+      if (validateFile(e.dataTransfer.files[0])) {
+        onFileSelect(e.dataTransfer.files[0]);
+      }
     }
   };
 
@@ -66,7 +85,7 @@ export default function FileUpload({
           type="file"
           className="hidden"
           onChange={handleFileChange}
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+          accept={accept}
         />
         <p className="text-gray-600 flex items-center">
           {selectedFile ? (
@@ -101,11 +120,14 @@ export default function FileUpload({
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              Upload file
+              Upload PDF file
             </>
           )}
         </p>
       </div>
+
+      {error && <div className="text-red-500 text-sm px-1">{error}</div>}
+
       {selectedFile && (
         <div className="text-base text-gray-500 flex justify-between items-center px-1">
           <span>Size: {formatFileSize(selectedFile.size)}</span>

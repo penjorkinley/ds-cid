@@ -1,8 +1,7 @@
+// app/api/send-email/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { UploadResponse } from "@/services/ds-api";
-import { encodeResponseData } from "@/utils/encoding";
-import { generateQRCode } from "@/utils/qrcode";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,9 +15,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const encodedData = encodeResponseData(response);
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const qrCodeBuffer = await generateQRCode(encodedData, baseUrl);
+    // Use the documentViewUrl from the response
+    const documentViewUrl =
+      response.documentViewUrl ||
+      `${
+        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+      }/view-document/${response.documentId}`;
 
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -35,21 +37,29 @@ export async function POST(req: NextRequest) {
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.SMTP_USER,
       to: response.email,
-      subject: "Your Document QR Code",
+      subject: "Your Document Needs Signature",
       html: `
         <h2>Bhutan NDI Digital Signature Portal</h2>
         <p>Hello ${response.name},</p>
-        <p>Your document has been successfully uploaded. Scan the QR code below:</p>
-        <img src="cid:qrcode" alt="QR Code" style="display: block; margin: 20px auto; width:250px; height:250px" />
+        <p>A document has been uploaded that requires your signature. Please click the link below to view and sign the document:</p>
+        
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td align="center" style="padding: 20px 0;">
+              <a href="${documentViewUrl}" 
+                 style="display: inline-block; background-color: #5AC893; color: white; 
+                        font-weight: bold; padding: 12px 24px; text-decoration: none; 
+                        border-radius: 4px; font-family: Arial, sans-serif;">
+                View & Sign Document
+              </a>
+            </td>
+          </tr>
+        </table>
+        
+        <p>Document ID: ${response.documentId}</p>
+        <p>If you did not expect this document, please disregard this email.</p>
         <p>Thank you for using our service.</p>
       `,
-      attachments: [
-        {
-          filename: "qrcode.png",
-          content: qrCodeBuffer,
-          cid: "qrcode",
-        },
-      ],
     };
 
     await transporter.sendMail(mailOptions);
