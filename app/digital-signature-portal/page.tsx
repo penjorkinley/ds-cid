@@ -1,4 +1,4 @@
-import SignatureForm from "@/components/SignatureForm";
+import SignatureForm from "@/components/signature/SignatureForm";
 
 export default function DigitalSignaturePage() {
   return (

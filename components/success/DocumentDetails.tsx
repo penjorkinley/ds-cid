@@ -11,7 +11,7 @@ export default function DocumentDetails({ response }: DocumentDetailsProps) {
     { label: "Document URL", value: response.documentUrl, isBreakAll: true },
     { label: "Name", value: response.name },
     { label: "Email", value: response.email },
-    { label: "Holder DID", value: response.holderDid },
+    { label: "CID", value: response.cid },
     { label: "Organization ID", value: response.organizationId },
   ];
 

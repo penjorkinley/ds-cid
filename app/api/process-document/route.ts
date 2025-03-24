@@ -6,7 +6,7 @@ interface DocumentData {
   documentHash: string;
   documentUrl: string;
   name: string;
-  holderDid: string;
+  cid: string;
   organizationId: string;
 }
 

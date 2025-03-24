@@ -39,8 +39,8 @@ export default function SignatoryCard({
             <p className="mt-1 text-gray-900">{signatory.email}</p>
           </div>
           <div>
-            <h4 className="text-sm font-medium text-gray-500">Holder DID</h4>
-            <p className="mt-1 text-gray-900 truncate">{signatory.holderDid}</p>
+            <h4 className="text-sm font-medium text-gray-500">CID</h4>
+            <p className="mt-1 text-gray-900 truncate">{signatory.cid}</p>
           </div>
           <div>
             <h4 className="text-sm font-medium text-gray-500">Status</h4>

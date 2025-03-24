@@ -3,50 +3,28 @@
 import { useState } from "react";
 import Image from "next/image";
 import { uploadDocument, UploadResponse } from "@/services/ds-api";
-import SuccessMessage from "./success/SuccessMessage";
-import DocumentForm from "./DocumentForm";
+import SuccessMessage from "@/components/success/SuccessMessage";
+import MultiStepForm, {
+  SignaturePlaceholder,
+} from "@/components/signature/SignatureStepsForm";
 
 interface FormData {
   name: string;
   email: string;
-  holderDid: string;
+  cid: string;
   file: File | null;
+  signaturePlaceholders: SignaturePlaceholder[];
 }
 
 export default function SignatureForm() {
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    email: "",
-    holderDid: "",
-    file: null,
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [response, setResponse] = useState<UploadResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleFileChange = (file: File) => {
-    setFormData((prev) => ({
-      ...prev,
-      file,
-    }));
-  };
 
   const sendEmailWithQRCode = async (response: UploadResponse) => {
     try {
       setEmailStatus("Sending email with QR code...");
 
       const emailResponse = await fetch("/api/send-email", {
-        // Note: corrected the API path
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -61,7 +39,6 @@ export default function SignatureForm() {
         );
       }
 
-      // const emailData = await emailResponse.json();
       setEmailStatus("Email sent successfully to " + response.email);
     } catch (err) {
       console.error("Error sending email:", err);
@@ -73,48 +50,47 @@ export default function SignatureForm() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-    setEmailStatus(null);
-
+  const handleSubmit = async (formData: FormData) => {
     try {
       if (!formData.file) {
         throw new Error("Please select a file to upload");
       }
 
+      // Add signature placeholders to form data before sending to API
+      const formDataWithSignatures = new FormData();
+      formDataWithSignatures.append("name", formData.name);
+      formDataWithSignatures.append("email", formData.email);
+      formDataWithSignatures.append("cid", formData.cid);
+      formDataWithSignatures.append("file", formData.file);
+
+      // Convert placeholders to JSON and add them to the form data
+      formDataWithSignatures.append(
+        "signaturePlaceholders",
+        JSON.stringify(formData.signaturePlaceholders)
+      );
+
+      // Update the uploadDocument function to handle the signature placeholders
       const result = await uploadDocument({
         name: formData.name,
         email: formData.email,
-        holderDid: formData.holderDid,
+        cid: formData.cid,
         file: formData.file,
+        signaturePlaceholders: formData.signaturePlaceholders,
       });
-      console.log("Raw API Response:", result); // Check for trailing characters
+
+      console.log("Raw API Response:", result);
       setResponse(result);
 
       // Send email with QR code
       await sendEmailWithQRCode(result);
-
-      // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        holderDid: "",
-        file: null,
-      });
     } catch (err) {
       console.error("Error submitting form:", err);
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
-    } finally {
-      setIsSubmitting(false);
+      throw err;
     }
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8 border border-gray-200">
+    <div className="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8 border border-gray-200">
       <div className="flex flex-col items-center mb-8">
         <div className="w-24 h-24 relative mb-4">
           <Image
@@ -139,14 +115,7 @@ export default function SignatureForm() {
           }}
         />
       ) : (
-        <DocumentForm
-          formData={formData}
-          error={error}
-          isSubmitting={isSubmitting}
-          handleChange={handleChange}
-          handleFileChange={handleFileChange}
-          handleSubmit={handleSubmit}
-        />
+        <MultiStepForm onSubmit={handleSubmit} />
       )}
     </div>
   );
