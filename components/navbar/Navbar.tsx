@@ -17,6 +17,7 @@ export default function Navbar() {
                 src="/ndi-logo.jpeg"
                 alt="Bhutan NDI Logo"
                 fill
+                sizes="(max-width: 768px) 100vw, 64px"
                 className="object-contain"
               />
             </div>

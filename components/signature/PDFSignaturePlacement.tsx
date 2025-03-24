@@ -6,8 +6,8 @@ import { Rnd } from "react-rnd";
 import { SignaturePlaceholder } from "@/components/signature/SignatureStepsForm";
 import { nanoid } from "nanoid";
 
-// Set up the worker for react-pdf
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// Set the worker source to the local file in the public directory
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 interface PDFSignaturePlacementProps {
   file: File;

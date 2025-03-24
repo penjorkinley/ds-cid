@@ -28,7 +28,7 @@ export default function DocumentForm({
   handleSubmit,
 }: DocumentFormProps) {
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
           {error}
@@ -71,6 +71,6 @@ export default function DocumentForm({
       <Button type="submit" isLoading={isSubmitting}>
         Submit
       </Button>
-    </form>
+    </div>
   );
 }
