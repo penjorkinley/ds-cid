@@ -1,7 +1,6 @@
 import React from "react";
 import Input from "@/components/ui/Input";
 import FileUpload from "@/components/ui/FileUpload";
-import Button from "@/components/ui/Button";
 
 interface FormData {
   name: string;
@@ -68,9 +67,7 @@ export default function DocumentForm({
         selectedFile={formData.file}
       />
 
-      <Button type="submit" isLoading={isSubmitting}>
-        Submit
-      </Button>
+      {/* Submit button removed */}
     </div>
   );
 }
