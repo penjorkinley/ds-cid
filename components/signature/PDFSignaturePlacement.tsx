@@ -39,6 +39,32 @@ export default function PDFSignaturePlacement({
     e.stopPropagation();
   };
 
+  // Add CSS for cursor styles
+  useEffect(() => {
+    // Add our custom styles to the document
+    const styleEl = document.createElement("style");
+    styleEl.innerHTML = `
+      .signature-drag-handle {
+        cursor: grab !important;
+      }
+      .signature-dragging {
+        cursor: grabbing !important;
+      }
+      .signature-drag-handle * {
+        cursor: grab !important;
+      }
+      .signature-dragging * {
+        cursor: grabbing !important;
+      }
+    `;
+    document.head.appendChild(styleEl);
+
+    // Cleanup function
+    return () => {
+      document.head.removeChild(styleEl);
+    };
+  }, []);
+
   // Track mouse position only when dragging
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -270,7 +296,7 @@ export default function PDFSignaturePlacement({
           <button
             type="button"
             onClick={() => setScale((prev) => Math.max(0.3, prev - 0.1))}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={scale <= 0.3}
           >
             -
@@ -279,7 +305,7 @@ export default function PDFSignaturePlacement({
           <button
             type="button"
             onClick={() => setScale((prev) => Math.min(2, prev + 0.1))}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={scale >= 2}
           >
             +
@@ -287,7 +313,7 @@ export default function PDFSignaturePlacement({
           <button
             type="button"
             onClick={resetZoom}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 cursor-pointer"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
             title="Fit to window"
           >
             Fit
@@ -296,7 +322,7 @@ export default function PDFSignaturePlacement({
         <button
           type="button"
           onClick={handleAddPlaceholder}
-          className="px-4 py-1 text-white bg-[#5AC893] rounded hover:bg-[#4ba578] transition-colors cursor-pointer"
+          className="px-4 py-1 text-white bg-[#5AC893] rounded hover:bg-[#4ba578] transition-colors"
         >
           Add Signature Field
         </button>
@@ -308,7 +334,7 @@ export default function PDFSignaturePlacement({
             type="button"
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage <= 1}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Previous
           </button>
@@ -321,7 +347,7 @@ export default function PDFSignaturePlacement({
               setCurrentPage((prev) => Math.min(numPages as number, prev + 1))
             }
             disabled={numPages !== null && currentPage >= numPages}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
           </button>
@@ -387,16 +413,31 @@ export default function PDFSignaturePlacement({
                     position={{ x: displayX, y: displayY }}
                     size={{ width: displayWidth, height: displayHeight }}
                     onDragStart={() => {
-                      document.body.style.cursor = "grabbing";
                       setIsDragging(true);
                       startScrollTimer();
                     }}
+                    onDrag={() => {
+                      // Make sure we have the grabbing cursor during drag
+                      const elements = document.querySelectorAll(
+                        ".signature-drag-handle"
+                      );
+                      elements.forEach((el) => {
+                        el.classList.add("signature-dragging");
+                      });
+                    }}
                     onDragStop={(e, d) => {
-                      document.body.style.cursor = "";
                       setIsDragging(false);
                       if (scrollTimerRef.current) {
                         clearInterval(scrollTimerRef.current);
                       }
+
+                      // Remove the grabbing cursor class
+                      const elements = document.querySelectorAll(
+                        ".signature-drag-handle"
+                      );
+                      elements.forEach((el) => {
+                        el.classList.remove("signature-dragging");
+                      });
 
                       // Store normalized position (convert from scaled to normal)
                       handlePlaceholderChange(placeholder.id, {
@@ -417,7 +458,7 @@ export default function PDFSignaturePlacement({
                     dragHandleClassName="signature-drag-handle"
                   >
                     <div className="relative w-full h-full border-2 border-dashed border-blue-500 bg-blue-100 bg-opacity-50 flex items-center justify-center signature-drag-handle">
-                      <span className="text-sm font-medium text-blue-700">
+                      <span className="text-sm font-medium text-blue-700 pointer-events-none">
                         Signature
                       </span>
                       <button
