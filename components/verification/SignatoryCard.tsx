@@ -38,10 +38,10 @@ export default function SignatoryCard({
             <h4 className="text-sm font-medium text-gray-500">Email</h4>
             <p className="mt-1 text-gray-900">{signatory.email}</p>
           </div>
-          <div>
+          {/* <div>
             <h4 className="text-sm font-medium text-gray-500">CID</h4>
             <p className="mt-1 text-gray-900 truncate">{signatory.cid}</p>
-          </div>
+          </div> */}
           <div>
             <h4 className="text-sm font-medium text-gray-500">Status</h4>
             <p className="mt-1 text-gray-900">{signatory.message}</p>

@@ -8,7 +8,7 @@ import {
   verifyDocument,
   VerificationApiResponse,
 } from "@/services/verification-api";
-import SignatoryCard from "@/components/SignatoryCard";
+import SignatoryCard from "@/components/verification/SignatoryCard";
 
 export default function VerificationForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
