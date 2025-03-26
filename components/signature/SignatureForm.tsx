@@ -97,6 +97,7 @@ export default function SignatureForm() {
             src="/ndi-logo.jpeg"
             alt="Bhutan NDI Digital Signature Logo"
             fill
+            sizes="(max-width: 768px) 100vw, 64px"
             className="object-contain"
           />
         </div>
