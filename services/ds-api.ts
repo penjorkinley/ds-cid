@@ -10,7 +10,7 @@ export interface SignaturePlaceholder {
 export interface UploadResponse {
   documentId: string;
   documentHash: string;
-  documentUrl: string;
+  documentViewUrl: string;
   name: string;
   email: string;
   cid: string;

@@ -10,7 +10,7 @@ export default function DocumentDetails({ response }: DocumentDetailsProps) {
     { label: "Document Hash", value: response.documentHash, isMono: true },
     {
       label: "Document URL",
-      value: response.documentUrl,
+      value: response.documentViewUrl,
       isBreakAll: true,
     },
     { label: "Name", value: response.name },

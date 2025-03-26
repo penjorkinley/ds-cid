@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 interface DocumentData {
   documentId: string;
   documentHash: string;
-  documentUrl: string;
+  documentViewUrl: string;
   name: string;
   cid: string;
   organizationId: string;
