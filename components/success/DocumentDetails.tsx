@@ -8,7 +8,11 @@ export default function DocumentDetails({ response }: DocumentDetailsProps) {
   const details = [
     { label: "Document ID", value: response.documentId, isMono: true },
     { label: "Document Hash", value: response.documentHash, isMono: true },
-    { label: "Document URL", value: response.documentUrl, isBreakAll: true },
+    {
+      label: "Document URL",
+      value: response.documentUrl,
+      isBreakAll: true,
+    },
     { label: "Name", value: response.name },
     { label: "Email", value: response.email },
     { label: "CID", value: response.cid },

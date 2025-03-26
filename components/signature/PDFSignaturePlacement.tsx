@@ -30,16 +30,35 @@ export default function PDFSignaturePlacement({
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const scrollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Track mouse position globally
+  // Function to prevent wheel events from propagating outside the container
+  const handleWheelEvent = (e: React.WheelEvent<HTMLDivElement>) => {
+    // Don't prevent the default scroll behavior, just stop propagation
+    e.stopPropagation();
+  };
+
+  // Track mouse position only when dragging
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
+      if (isDragging) {
+        setMousePosition({ x: e.clientX, y: e.clientY });
+      }
     };
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [isDragging]);
+
+  // Cleanup function for any active timers
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        clearInterval(scrollTimerRef.current);
+      }
     };
   }, []);
 
@@ -137,8 +156,8 @@ export default function PDFSignaturePlacement({
       id: nanoid(),
       x: centerX,
       y: centerY,
-      width: 200 / scale, // Store normalized width
-      height: 100 / scale, // Store normalized height
+      width: 100 / scale, // Store normalized width
+      height: 50 / scale, // Store normalized height
       pageNumber: currentPage,
     };
 
@@ -200,28 +219,31 @@ export default function PDFSignaturePlacement({
     setScale(optimalZoom);
   };
 
-  // Handle auto-scrolling during drag
+  // Modified auto-scroll function with reduced sensitivity
   const handleDragWithScroll = () => {
+    if (!isDragging) return; // Only auto-scroll during drag operations
+
     const container = containerRef.current;
     if (container) {
       const containerRect = container.getBoundingClientRect();
-      const scrollSpeed = 15;
+      const scrollMargin = 30; // Reduced from 50
+      const scrollSpeed = 8; // Reduced from 15
 
       // Vertical scrolling
-      if (mousePosition.y > containerRect.bottom - 50) {
+      if (mousePosition.y > containerRect.bottom - scrollMargin) {
         container.scrollTop += scrollSpeed;
       }
 
-      if (mousePosition.y < containerRect.top + 50) {
+      if (mousePosition.y < containerRect.top + scrollMargin) {
         container.scrollTop -= scrollSpeed;
       }
 
       // Horizontal scrolling
-      if (mousePosition.x > containerRect.right - 50) {
+      if (mousePosition.x > containerRect.right - scrollMargin) {
         container.scrollLeft += scrollSpeed;
       }
 
-      if (mousePosition.x < containerRect.left + 50) {
+      if (mousePosition.x < containerRect.left + scrollMargin) {
         container.scrollLeft -= scrollSpeed;
       }
     }
@@ -229,11 +251,16 @@ export default function PDFSignaturePlacement({
 
   // Start a timer to periodically check if we need to scroll during drag
   const startScrollTimer = () => {
-    const scrollInterval = setInterval(() => {
-      handleDragWithScroll();
-    }, 50); // Check every 50ms
+    // Clear any existing timer first
+    if (scrollTimerRef.current) {
+      clearInterval(scrollTimerRef.current);
+    }
 
-    return scrollInterval;
+    scrollTimerRef.current = setInterval(() => {
+      handleDragWithScroll();
+    }, 50);
+
+    return scrollTimerRef.current;
   };
 
   return (
@@ -243,7 +270,7 @@ export default function PDFSignaturePlacement({
           <button
             type="button"
             onClick={() => setScale((prev) => Math.max(0.3, prev - 0.1))}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             disabled={scale <= 0.3}
           >
             -
@@ -252,7 +279,7 @@ export default function PDFSignaturePlacement({
           <button
             type="button"
             onClick={() => setScale((prev) => Math.min(2, prev + 0.1))}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             disabled={scale >= 2}
           >
             +
@@ -260,7 +287,7 @@ export default function PDFSignaturePlacement({
           <button
             type="button"
             onClick={resetZoom}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 cursor-pointer"
             title="Fit to window"
           >
             Fit
@@ -269,7 +296,7 @@ export default function PDFSignaturePlacement({
         <button
           type="button"
           onClick={handleAddPlaceholder}
-          className="px-4 py-1 text-white bg-[#5AC893] rounded hover:bg-[#4ba578] transition-colors"
+          className="px-4 py-1 text-white bg-[#5AC893] rounded hover:bg-[#4ba578] transition-colors cursor-pointer"
         >
           Add Signature Field
         </button>
@@ -281,7 +308,7 @@ export default function PDFSignaturePlacement({
             type="button"
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage <= 1}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             Previous
           </button>
@@ -294,7 +321,7 @@ export default function PDFSignaturePlacement({
               setCurrentPage((prev) => Math.min(numPages as number, prev + 1))
             }
             disabled={numPages !== null && currentPage >= numPages}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             Next
           </button>
@@ -306,6 +333,7 @@ export default function PDFSignaturePlacement({
         className="relative border-2 border-gray-400 rounded-lg overflow-auto bg-gray-100"
         style={{ height: "calc(85vh - 150px)", minHeight: "500px" }}
         id="pdf-container"
+        onWheel={handleWheelEvent}
       >
         {fileUrl && (
           <div
@@ -346,8 +374,6 @@ export default function PDFSignaturePlacement({
               }}
             >
               {currentPagePlaceholders.map((placeholder) => {
-                let scrollTimer: NodeJS.Timeout | null = null;
-
                 // Scale the placeholder coordinates and size for display
                 const displayX = placeholder.x * scale;
                 const displayY = placeholder.y * scale;
@@ -362,11 +388,15 @@ export default function PDFSignaturePlacement({
                     size={{ width: displayWidth, height: displayHeight }}
                     onDragStart={() => {
                       document.body.style.cursor = "grabbing";
-                      scrollTimer = startScrollTimer();
+                      setIsDragging(true);
+                      startScrollTimer();
                     }}
                     onDragStop={(e, d) => {
                       document.body.style.cursor = "";
-                      if (scrollTimer) clearInterval(scrollTimer);
+                      setIsDragging(false);
+                      if (scrollTimerRef.current) {
+                        clearInterval(scrollTimerRef.current);
+                      }
 
                       // Store normalized position (convert from scaled to normal)
                       handlePlaceholderChange(placeholder.id, {
@@ -416,21 +446,6 @@ export default function PDFSignaturePlacement({
         placeholders. Add as many as needed. Use the zoom controls to see the
         entire document. Click the red "×" button to remove a placeholder.
       </div>
-
-      {/* Debug section - can be removed in production */}
-      {false && (
-        <div className="mt-4 p-4 bg-gray-100 rounded border">
-          <h3 className="font-medium">Debug Info</h3>
-          <p>Current scale: {scale.toFixed(2)}</p>
-          <p>
-            PDF dimensions: {pdfDimensions.width} x {pdfDimensions.height}
-          </p>
-          <p>Placeholders: {placeholders.length}</p>
-          <pre className="mt-2 text-xs overflow-auto max-h-40">
-            {JSON.stringify(currentPagePlaceholders, null, 2)}
-          </pre>
-        </div>
-      )}
     </div>
   );
 }

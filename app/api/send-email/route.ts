@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
       html: `
         <h2>Bhutan NDI Digital Signature Portal</h2>
         <p>Hello ${response.name},</p>
-        <p>Your document has been successfully uploaded. Scan the QR code below:</p>
-        <img src="cid:qrcode" alt="QR Code" style="display: block; margin: 20px auto; width:250px; height:250px" />
+        <p>Scan the QR code to view the document, append your e-signature, and apply your digital signature:</p>
+        <img src="cid:qrcode" alt="QR Code" style="display: block; margin: 20px auto; width:300px; height:300px" />
         <p>Thank you for using our service.</p>
       `,
       attachments: [

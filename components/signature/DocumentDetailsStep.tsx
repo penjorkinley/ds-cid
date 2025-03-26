@@ -66,8 +66,6 @@ export default function DocumentForm({
         onFileSelect={handleFileChange}
         selectedFile={formData.file}
       />
-
-      {/* Submit button removed */}
     </div>
   );
 }
