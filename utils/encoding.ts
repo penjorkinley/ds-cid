@@ -8,7 +8,7 @@ export function encodeResponseData(response: UploadResponse): string {
     documentViewUrl,
     name,
     cid,
-    signatureCoordinates, // Changed from signaturePlaceholders to signatureCoordinates
+    signatureCoordinates,
   } = response;
 
   // Create a new object with only the fields we want

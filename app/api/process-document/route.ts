@@ -7,8 +7,8 @@ interface DocumentData {
   documentViewUrl: string;
   name: string;
   cid: string;
-  organizationId?: string; // Made optional
-  signatureCoordinates?: string; // Added signature coordinates
+  organizationId?: string;
+  signatureCoordinates?: string;
 }
 
 export async function GET(request: Request) {
