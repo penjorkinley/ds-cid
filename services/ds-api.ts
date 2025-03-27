@@ -14,9 +14,10 @@ export interface UploadResponse {
   name: string;
   email: string;
   cid: string;
-  organizationId: string;
+  organizationId?: string;
   message: string;
   signaturePlaceholders?: SignaturePlaceholder[];
+  signatureCoordinates?: string; // Added this field
 }
 
 export interface UploadDocumentParams {

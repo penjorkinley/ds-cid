@@ -16,7 +16,6 @@ export default function DocumentDetails({ response }: DocumentDetailsProps) {
     { label: "Name", value: response.name },
     { label: "Email", value: response.email },
     { label: "CID", value: response.cid },
-    { label: "Organization ID", value: response.organizationId },
   ];
 
   return (
