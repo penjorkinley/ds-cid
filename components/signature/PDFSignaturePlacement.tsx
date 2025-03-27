@@ -139,6 +139,22 @@ export default function PDFSignaturePlacement({
     setPdfDimensions({ width, height });
   };
 
+  // Convert top-left coordinates to bottom-left
+  const toBottomLeftCoordinates = (x: number, y: number) => {
+    return {
+      x,
+      y: pdfDimensions.height - y, // Invert the y-coordinate
+    };
+  };
+
+  // Convert bottom-left coordinates to top-left
+  const toTopLeftCoordinates = (x: number, y: number) => {
+    return {
+      x,
+      y: pdfDimensions.height - y, // Invert the y-coordinate back
+    };
+  };
+
   const handleAddPlaceholder = () => {
     // Calculate center position of the current view
     const containerRect = containerRef.current?.getBoundingClientRect();
@@ -176,12 +192,17 @@ export default function PDFSignaturePlacement({
         0,
         Math.min(centerY, pdfDimensions.height - 100 / scale)
       );
+
+      // Convert to bottom-left coordinate system
+      const bottomLeftCoords = toBottomLeftCoordinates(centerX, centerY);
+      centerX = bottomLeftCoords.x;
+      centerY = bottomLeftCoords.y;
     }
 
     const newPlaceholder: SignaturePlaceholder = {
       id: nanoid(),
       x: centerX,
-      y: centerY,
+      y: centerY, // This is now in bottom-left coordinates
       width: 100 / scale, // Store normalized width
       height: 50 / scale, // Store normalized height
       pageNumber: currentPage,
@@ -195,13 +216,21 @@ export default function PDFSignaturePlacement({
     update: Partial<SignaturePlaceholder>
   ) => {
     // If position is being updated, normalize it to scale=1
+    // and convert to bottom-left coordinates
     const normalizedUpdate = { ...update };
 
     if (update.x !== undefined || update.y !== undefined) {
-      normalizedUpdate.x =
-        update.x !== undefined ? update.x / scale : undefined;
-      normalizedUpdate.y =
-        update.y !== undefined ? update.y / scale : undefined;
+      // Get the current coordinates
+      let updateX = update.x !== undefined ? update.x / scale : undefined;
+      let updateY = update.y !== undefined ? update.y / scale : undefined;
+
+      // If we have a Y update, convert it to bottom-left coordinate system
+      if (updateY !== undefined) {
+        updateY = pdfDimensions.height - updateY;
+      }
+
+      normalizedUpdate.x = updateX;
+      normalizedUpdate.y = updateY;
     }
 
     if (update.width !== undefined || update.height !== undefined) {
@@ -400,9 +429,15 @@ export default function PDFSignaturePlacement({
               }}
             >
               {currentPagePlaceholders.map((placeholder) => {
-                // Scale the placeholder coordinates and size for display
-                const displayX = placeholder.x * scale;
-                const displayY = placeholder.y * scale;
+                // First convert from bottom-left to top-left coordinates
+                const topLeftCoords = toTopLeftCoordinates(
+                  placeholder.x,
+                  placeholder.y
+                );
+
+                // Then scale for display
+                const displayX = topLeftCoords.x * scale;
+                const displayY = topLeftCoords.y * scale;
                 const displayWidth = placeholder.width * scale;
                 const displayHeight = placeholder.height * scale;
 
@@ -439,14 +474,15 @@ export default function PDFSignaturePlacement({
                         el.classList.remove("signature-dragging");
                       });
 
-                      // Store normalized position (convert from scaled to normal)
+                      // Store normalized position in bottom-left coordinates
+                      // The conversion from top-left to bottom-left happens in handlePlaceholderChange
                       handlePlaceholderChange(placeholder.id, {
                         x: d.x,
                         y: d.y,
                       });
                     }}
                     onResizeStop={(e, direction, ref, delta, position) => {
-                      // Store normalized size (convert from scaled to normal)
+                      // Store normalized size and position in bottom-left coordinates
                       handlePlaceholderChange(placeholder.id, {
                         width: parseInt(ref.style.width),
                         height: parseInt(ref.style.height),
