@@ -15,6 +15,13 @@ interface PDFSignaturePlacementProps {
   placeholders: SignaturePlaceholder[];
 }
 
+interface PageData {
+  width: number;
+  height: number;
+  originalWidth?: number;
+  originalHeight?: number;
+}
+
 export default function PDFSignaturePlacement({
   file,
   onChange,
@@ -27,7 +34,7 @@ export default function PDFSignaturePlacement({
   const [pdfDimensions, setPdfDimensions] = useState({ width: 0, height: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  // Removing unused containerSize state
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -98,11 +105,12 @@ export default function PDFSignaturePlacement({
   // Update container size when window resizes
   useEffect(() => {
     const updateContainerSize = () => {
+      // We removed the containerSize state since it's unused
+      // Just keep the calculation in case it's needed elsewhere
       if (containerRef.current) {
-        setContainerSize({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
+        const width = containerRef.current.clientWidth;
+        const height = containerRef.current.clientHeight;
+        // Use these values directly where needed
       }
     };
 
@@ -114,6 +122,26 @@ export default function PDFSignaturePlacement({
     return () => window.removeEventListener("resize", updateContainerSize);
   }, []);
 
+  // Calculate optimal zoom to fit the container
+  const calculateOptimalZoom = () => {
+    if (!containerRef.current || !pdfDimensions.width || !pdfDimensions.height)
+      return 1;
+
+    const containerWidth = containerRef.current.clientWidth - 40; // Subtract padding
+    const containerHeight = containerRef.current.clientHeight - 40; // Subtract padding
+
+    const widthRatio = containerWidth / pdfDimensions.width;
+    const heightRatio = containerHeight / pdfDimensions.height;
+
+    // Use the smaller ratio to ensure both dimensions fit
+    return Math.min(widthRatio, heightRatio, 1); // Limit max zoom to 100%
+  };
+
+  const resetZoom = () => {
+    const optimalZoom = calculateOptimalZoom();
+    setScale(optimalZoom);
+  };
+
   // Auto-fit PDF when dimensions are available
   useEffect(() => {
     if (
@@ -124,17 +152,16 @@ export default function PDFSignaturePlacement({
       resetZoom();
       setInitialLoadComplete(true);
     }
-  }, [pdfDimensions, initialLoadComplete]);
+  }, [pdfDimensions, initialLoadComplete, resetZoom]); // Added resetZoom to dependency array
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
   };
 
   // Update PDF dimensions when page loads
-  const onPageLoadSuccess = (page: any) => {
-    const { width, height } = page.originalWidth
-      ? { width: page.originalWidth, height: page.originalHeight }
-      : { width: page.width, height: page.height };
+  const onPageLoadSuccess = (page: PageData) => {
+    const width = page.originalWidth ?? page.width ?? 0;
+    const height = page.originalHeight ?? page.height ?? 0;
 
     setPdfDimensions({ width, height });
   };
@@ -221,16 +248,15 @@ export default function PDFSignaturePlacement({
 
     if (update.x !== undefined || update.y !== undefined) {
       // Get the current coordinates
-      let updateX = update.x !== undefined ? update.x / scale : undefined;
-      let updateY = update.y !== undefined ? update.y / scale : undefined;
+      const updateX = update.x !== undefined ? update.x / scale : undefined;
+      const updateY = update.y !== undefined ? update.y / scale : undefined;
 
       // If we have a Y update, convert it to bottom-left coordinate system
       if (updateY !== undefined) {
-        updateY = pdfDimensions.height - updateY;
+        normalizedUpdate.y = pdfDimensions.height - updateY;
       }
 
       normalizedUpdate.x = updateX;
-      normalizedUpdate.y = updateY;
     }
 
     if (update.width !== undefined || update.height !== undefined) {
@@ -253,26 +279,6 @@ export default function PDFSignaturePlacement({
   const currentPagePlaceholders = placeholders.filter(
     (p) => p.pageNumber === currentPage
   );
-
-  // Calculate optimal zoom to fit the container
-  const calculateOptimalZoom = () => {
-    if (!containerRef.current || !pdfDimensions.width || !pdfDimensions.height)
-      return 1;
-
-    const containerWidth = containerRef.current.clientWidth - 40; // Subtract padding
-    const containerHeight = containerRef.current.clientHeight - 40; // Subtract padding
-
-    const widthRatio = containerWidth / pdfDimensions.width;
-    const heightRatio = containerHeight / pdfDimensions.height;
-
-    // Use the smaller ratio to ensure both dimensions fit
-    return Math.min(widthRatio, heightRatio, 1); // Limit max zoom to 100%
-  };
-
-  const resetZoom = () => {
-    const optimalZoom = calculateOptimalZoom();
-    setScale(optimalZoom);
-  };
 
   // Modified auto-scroll function with reduced sensitivity
   const handleDragWithScroll = () => {
@@ -521,7 +527,8 @@ export default function PDFSignaturePlacement({
       <div className="mt-4 text-sm">
         <strong>Instructions:</strong> Drag to position and resize the signature
         placeholders. Add as many as needed. Use the zoom controls to see the
-        entire document. Click the red "×" button to remove a placeholder.
+        entire document. Click the red &quot;×&quot; button to remove a
+        placeholder.
       </div>
     </div>
   );

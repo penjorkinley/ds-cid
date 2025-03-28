@@ -105,6 +105,11 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
     }
   };
 
+  // Fixed the unused parameter issue
+  const handleFormSubmit = () => {
+    // Empty function to satisfy the interface
+  };
+
   return (
     <div className="w-full">
       {/* Progress indicator */}
@@ -149,10 +154,10 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
           <DocumentForm
             formData={formData}
             error={null}
-            isSubmitting={false}
+            isSubmitting={isSubmitting}
             handleChange={handleChange}
             handleFileChange={handleFileChange}
-            handleSubmit={(e) => {}}
+            handleSubmit={handleFormSubmit}
           />
           <div className="mt-6">
             <Button type="submit">Next</Button>

@@ -21,10 +21,8 @@ interface DocumentFormProps {
 export default function DocumentForm({
   formData,
   error,
-  isSubmitting,
   handleChange,
   handleFileChange,
-  handleSubmit,
 }: DocumentFormProps) {
   return (
     <div className="space-y-6">
