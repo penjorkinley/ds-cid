@@ -107,14 +107,16 @@ export default function SignatureForm() {
       </div>
 
       {response ? (
-        <SuccessMessage
-          response={response}
-          emailStatus={emailStatus}
-          onReset={() => {
-            setResponse(null);
-            setEmailStatus(null);
-          }}
-        />
+        <div className="py-8 bg-white">
+          <SuccessMessage
+            response={response}
+            emailStatus={emailStatus}
+            onReset={() => {
+              setResponse(null);
+              setEmailStatus(null);
+            }}
+          />
+        </div>
       ) : (
         <MultiStepForm onSubmit={handleSubmit} />
       )}
