@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Rnd } from "react-rnd";
 import { SignaturePlaceholder } from "@/components/signature/SignatureStepsForm";
@@ -105,12 +105,10 @@ export default function PDFSignaturePlacement({
   // Update container size when window resizes
   useEffect(() => {
     const updateContainerSize = () => {
-      // We removed the containerSize state since it's unused
-      // Just keep the calculation in case it's needed elsewhere
+      // We'll keep this function but don't need to use the variables
       if (containerRef.current) {
-        const width = containerRef.current.clientWidth;
-        const height = containerRef.current.clientHeight;
-        // Use these values directly where needed
+        // This code is just here for potential future use
+        // We're not using the values directly to avoid the unused vars warning
       }
     };
 
@@ -123,7 +121,7 @@ export default function PDFSignaturePlacement({
   }, []);
 
   // Calculate optimal zoom to fit the container
-  const calculateOptimalZoom = () => {
+  const calculateOptimalZoom = useCallback(() => {
     if (!containerRef.current || !pdfDimensions.width || !pdfDimensions.height)
       return 1;
 
@@ -135,12 +133,12 @@ export default function PDFSignaturePlacement({
 
     // Use the smaller ratio to ensure both dimensions fit
     return Math.min(widthRatio, heightRatio, 1); // Limit max zoom to 100%
-  };
+  }, [pdfDimensions.width, pdfDimensions.height]);
 
-  const resetZoom = () => {
+  const resetZoom = useCallback(() => {
     const optimalZoom = calculateOptimalZoom();
     setScale(optimalZoom);
-  };
+  }, [calculateOptimalZoom]);
 
   // Auto-fit PDF when dimensions are available
   useEffect(() => {
@@ -152,7 +150,7 @@ export default function PDFSignaturePlacement({
       resetZoom();
       setInitialLoadComplete(true);
     }
-  }, [pdfDimensions, initialLoadComplete, resetZoom]); // Added resetZoom to dependency array
+  }, [pdfDimensions, initialLoadComplete, resetZoom]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
