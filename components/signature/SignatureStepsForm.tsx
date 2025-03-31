@@ -275,7 +275,6 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
         <form onSubmit={handleFirstStepSubmit}>
           <DocumentForm
             formData={formData}
-            error={null}
             fieldErrors={validationErrors}
             isSubmitting={isSubmitting}
             handleChange={handleChange}

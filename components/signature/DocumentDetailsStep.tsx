@@ -13,7 +13,6 @@ interface FormData {
 
 interface DocumentFormProps {
   formData: FormData;
-  error: string | null;
   fieldErrors?: z.ZodError | null | undefined;
   isSubmitting: boolean;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -23,7 +22,6 @@ interface DocumentFormProps {
 
 export default function DocumentForm({
   formData,
-  error,
   fieldErrors,
   handleChange,
   handleFileChange,
@@ -36,12 +34,6 @@ export default function DocumentForm({
 
   return (
     <div className="space-y-4 sm:space-y-6 w-full">
-      {/* {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-          {error}
-        </div>
-      )} */}
-
       <div className="space-y-4">
         <div>
           <label
