@@ -9,6 +9,152 @@ import { nanoid } from "nanoid";
 // Set the worker source to the local file in the public directory
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
+interface ResponsiveControlPanelProps {
+  scale: number;
+  setScale: React.Dispatch<React.SetStateAction<number>>;
+  resetZoom: () => void;
+  handleAddPlaceholder: () => void;
+  numPages: number | null;
+  currentPage: number;
+  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
+}
+
+// Responsive control panel component
+const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
+  scale,
+  setScale,
+  resetZoom,
+  handleAddPlaceholder,
+  numPages,
+  currentPage,
+  setCurrentPage,
+}) => {
+  return (
+    <div className="flex flex-col space-y-4 mb-4">
+      {/* Zoom controls */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          <button
+            type="button"
+            onClick={() => setScale((prev) => Math.max(0.3, prev - 0.1))}
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={scale <= 0.3}
+            aria-label="Zoom out"
+          >
+            <span className="text-lg font-bold">-</span>
+          </button>
+          <span className="px-1 sm:px-3 py-1 text-sm sm:text-base">
+            {Math.round(scale * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={() => setScale((prev) => Math.min(2, prev + 0.1))}
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={scale >= 2}
+            aria-label="Zoom in"
+          >
+            <span className="text-lg font-bold">+</span>
+          </button>
+          {/* Updated Fit button - now larger and more consistent with other controls */}
+          <button
+            type="button"
+            onClick={resetZoom}
+            className="w-10 h-8 sm:w-14 sm:h-10 flex items-center justify-center bg-gray-200 rounded hover:bg-gray-300 text-xs sm:text-sm font-medium"
+            title="Fit to window"
+          >
+            Fit
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={handleAddPlaceholder}
+          className="px-3 sm:px-4 py-2 text-white bg-[#5AC893] rounded hover:bg-[#4ba578] transition-colors text-sm sm:text-base flex items-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-1"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Add signature
+        </button>
+      </div>
+
+      {/* Page navigation */}
+      {numPages && (
+        <div className="flex justify-center items-center">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage <= 1}
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Previous page"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+          <span className="mx-2 sm:mx-4 py-1 text-sm sm:text-base whitespace-nowrap">
+            Page {currentPage} of {numPages}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(numPages, prev + 1))
+            }
+            disabled={numPages !== null && currentPage >= numPages}
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Next page"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Instructions for mobile users
+const MobileInstructions: React.FC = () => {
+  return (
+    <div className="mt-4 text-sm bg-blue-50 p-3 rounded-lg border border-blue-100 md:hidden">
+      <strong className="text-blue-700">Tips:</strong>
+      <ul className="list-disc ml-5 mt-1 text-blue-600 space-y-1">
+        <li>Pinch to zoom in/out on the document</li>
+        <li>Tap and hold to drag signature fields</li>
+        <li>Tap corners to resize fields</li>
+        <li>Use the red × to remove fields</li>
+      </ul>
+    </div>
+  );
+};
+
 interface PDFSignaturePlacementProps {
   file: File;
   onChange: (placeholders: SignaturePlaceholder[]) => void;
@@ -34,21 +180,24 @@ export default function PDFSignaturePlacement({
   const [pdfDimensions, setPdfDimensions] = useState({ width: 0, height: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
-  // Removing unused containerSize state
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const scrollTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  // Detect touch devices
+  useEffect(() => {
+    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   // Function to prevent wheel events from propagating outside the container
   const handleWheelEvent = (e: React.WheelEvent<HTMLDivElement>) => {
-    // Don't prevent the default scroll behavior, just stop propagation
     e.stopPropagation();
   };
 
   // Add CSS for cursor styles
   useEffect(() => {
-    // Add our custom styles to the document
     const styleEl = document.createElement("style");
     styleEl.innerHTML = `
       .signature-drag-handle {
@@ -66,7 +215,6 @@ export default function PDFSignaturePlacement({
     `;
     document.head.appendChild(styleEl);
 
-    // Cleanup function
     return () => {
       document.head.removeChild(styleEl);
     };
@@ -105,17 +253,10 @@ export default function PDFSignaturePlacement({
   // Update container size when window resizes
   useEffect(() => {
     const updateContainerSize = () => {
-      // We'll keep this function but don't need to use the variables
-      if (containerRef.current) {
-        // This code is just here for potential future use
-        // We're not using the values directly to avoid the unused vars warning
-      }
+      // Just keeping the function as a placeholder
     };
 
-    // Initial size
     updateContainerSize();
-
-    // Attach resize handler
     window.addEventListener("resize", updateContainerSize);
     return () => window.removeEventListener("resize", updateContainerSize);
   }, []);
@@ -191,9 +332,9 @@ export default function PDFSignaturePlacement({
     if (containerRect && pdfDimensions.width > 0) {
       // Calculate center of the visible area
       const visibleCenterX =
-        containerRef.current?.scrollLeft || 0 + containerRect.width / 2;
+        (containerRef.current?.scrollLeft || 0) + containerRect.width / 2;
       const visibleCenterY =
-        containerRef.current?.scrollTop || 0 + containerRect.height / 2;
+        (containerRef.current?.scrollTop || 0) + containerRect.height / 2;
 
       // Convert to PDF coordinates (normalized to scale=1)
       // The PDF is centered, so we need to adjust for that
@@ -271,6 +412,7 @@ export default function PDFSignaturePlacement({
   };
 
   const handlePlaceholderRemove = (id: string) => {
+    console.log("Removing placeholder with ID:", id);
     onChange(placeholders.filter((p) => p.id !== id));
   };
 
@@ -324,73 +466,23 @@ export default function PDFSignaturePlacement({
 
   return (
     <div className="flex flex-col">
-      <div className="flex justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <button
-            type="button"
-            onClick={() => setScale((prev) => Math.max(0.3, prev - 0.1))}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={scale <= 0.3}
-          >
-            -
-          </button>
-          <span className="px-3 py-1">{Math.round(scale * 100)}%</span>
-          <button
-            type="button"
-            onClick={() => setScale((prev) => Math.min(2, prev + 0.1))}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={scale >= 2}
-          >
-            +
-          </button>
-          <button
-            type="button"
-            onClick={resetZoom}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-            title="Fit to window"
-          >
-            Fit
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={handleAddPlaceholder}
-          className="px-4 py-1 text-white bg-[#5AC893] rounded hover:bg-[#4ba578] transition-colors"
-        >
-          Add Signature Field
-        </button>
-      </div>
-
-      {numPages && (
-        <div className="flex justify-center mb-4">
-          <button
-            type="button"
-            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            disabled={currentPage <= 1}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-          <span className="mx-4 py-1">
-            Page {currentPage} of {numPages}
-          </span>
-          <button
-            type="button"
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(numPages as number, prev + 1))
-            }
-            disabled={numPages !== null && currentPage >= numPages}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
-        </div>
-      )}
+      <ResponsiveControlPanel
+        scale={scale}
+        setScale={setScale}
+        resetZoom={resetZoom}
+        handleAddPlaceholder={handleAddPlaceholder}
+        numPages={numPages}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+      />
 
       <div
         ref={containerRef}
         className="relative border-2 border-gray-400 rounded-lg overflow-auto bg-gray-100"
-        style={{ height: "calc(85vh - 150px)", minHeight: "500px" }}
+        style={{
+          height: isTouchDevice ? "calc(70vh - 150px)" : "calc(85vh - 150px)",
+          minHeight: "400px",
+        }}
         id="pdf-container"
         onWheel={handleWheelEvent}
       >
@@ -408,8 +500,12 @@ export default function PDFSignaturePlacement({
             <Document
               file={fileUrl}
               onLoadSuccess={onDocumentLoadSuccess}
-              loading={<div className="p-4">Loading PDF...</div>}
-              error={<div className="p-4 text-red-500">Failed to load PDF</div>}
+              loading={<div className="p-4 text-center">Loading PDF...</div>}
+              error={
+                <div className="p-4 text-red-500 text-center">
+                  Failed to load PDF
+                </div>
+              }
             >
               <Page
                 pageNumber={currentPage}
@@ -423,13 +519,15 @@ export default function PDFSignaturePlacement({
 
             {/* Signature placeholders layer */}
             <div
-              className="absolute pointer-events-none"
+              className="absolute"
               style={{
                 width: pdfDimensions.width * scale,
                 height: pdfDimensions.height * scale,
                 top: 24, // account for mt-6 (1.5rem = 24px)
                 left: "50%",
                 transform: "translateX(-50%)",
+                pointerEvents: "none",
+                zIndex: 10,
               }}
             >
               {currentPagePlaceholders.map((placeholder) => {
@@ -448,7 +546,6 @@ export default function PDFSignaturePlacement({
                 return (
                   <Rnd
                     key={placeholder.id}
-                    className="pointer-events-auto"
                     position={{ x: displayX, y: displayY }}
                     size={{ width: displayWidth, height: displayHeight }}
                     onDragStart={() => {
@@ -456,7 +553,6 @@ export default function PDFSignaturePlacement({
                       startScrollTimer();
                     }}
                     onDrag={() => {
-                      // Make sure we have the grabbing cursor during drag
                       const elements = document.querySelectorAll(
                         ".signature-drag-handle"
                       );
@@ -470,7 +566,6 @@ export default function PDFSignaturePlacement({
                         clearInterval(scrollTimerRef.current);
                       }
 
-                      // Remove the grabbing cursor class
                       const elements = document.querySelectorAll(
                         ".signature-drag-handle"
                       );
@@ -478,15 +573,12 @@ export default function PDFSignaturePlacement({
                         el.classList.remove("signature-dragging");
                       });
 
-                      // Store normalized position in bottom-left coordinates
-                      // The conversion from top-left to bottom-left happens in handlePlaceholderChange
                       handlePlaceholderChange(placeholder.id, {
                         x: d.x,
                         y: d.y,
                       });
                     }}
                     onResizeStop={(e, direction, ref, delta, position) => {
-                      // Store normalized size and position in bottom-left coordinates
                       handlePlaceholderChange(placeholder.id, {
                         width: parseInt(ref.style.width),
                         height: parseInt(ref.style.height),
@@ -496,23 +588,47 @@ export default function PDFSignaturePlacement({
                     }}
                     bounds="parent"
                     dragHandleClassName="signature-drag-handle"
+                    resizeHandleStyles={{
+                      bottomRight: {
+                        width: isTouchDevice ? "24px" : "10px",
+                        height: isTouchDevice ? "24px" : "10px",
+                        right: isTouchDevice ? "-12px" : "-5px",
+                        bottom: isTouchDevice ? "-12px" : "-5px",
+                        background: "rgba(0, 0, 255, 0.4)",
+                        borderRadius: "50%",
+                      },
+                    }}
+                    className="pointer-events-auto"
                   >
                     <div className="relative w-full h-full border-2 border-dashed border-blue-500 bg-blue-100 bg-opacity-50 flex items-center justify-center signature-drag-handle">
-                      <span className="text-sm font-medium text-blue-700 pointer-events-none">
+                      <span className="text-xs sm:text-sm font-medium text-blue-700 pointer-events-none">
                         Signature
                       </span>
-                      <button
-                        type="button"
-                        className="absolute -top-3 -right-3 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center z-50 hover:bg-red-600 transition-colors cursor-pointer"
-                        onClick={(e) => {
+
+                      {/* Delete button - improved for mobile */}
+                      <div
+                        className="absolute -top-3 -right-3 sm:-top-5 sm:-right-5 z-50 touch-manipulation"
+                        onTouchEnd={(e) => {
                           e.stopPropagation();
-                          e.preventDefault();
                           handlePlaceholderRemove(placeholder.id);
                         }}
-                        aria-label="Remove signature placeholder"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
                       >
-                        ×
-                      </button>
+                        <button
+                          type="button"
+                          className="w-8 h-8 sm:w-9 sm:h-9 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-md border-2 border-white focus:outline-none"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handlePlaceholderRemove(placeholder.id);
+                          }}
+                          aria-label="Remove signature field"
+                        >
+                          <span className="text-xl font-bold">×</span>
+                        </button>
+                      </div>
                     </div>
                   </Rnd>
                 );
@@ -522,11 +638,12 @@ export default function PDFSignaturePlacement({
         )}
       </div>
 
-      <div className="mt-4 text-sm">
+      <MobileInstructions />
+
+      <div className="mt-4 text-sm hidden md:block">
         <strong>Instructions:</strong> Drag to position and resize the signature
-        placeholders. Add as many as needed. Use the zoom controls to see the
-        entire document. Click the red &quot;×&quot; button to remove a
-        placeholder.
+        placeholders. Use the zoom controls to see the entire document. Click
+        the red &quot;×&quot; button to remove a placeholder.
       </div>
     </div>
   );

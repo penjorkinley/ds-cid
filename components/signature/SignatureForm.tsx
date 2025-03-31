@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { uploadDocument, UploadResponse } from "@/services/ds-api";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import SuccessMessage from "@/components/success/SuccessMessage";
 import MultiStepForm, {
   SignaturePlaceholder,
@@ -19,6 +20,7 @@ interface FormData {
 export default function SignatureForm() {
   const [response, setResponse] = useState<UploadResponse | null>(null);
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const sendEmailWithQRCode = async (response: UploadResponse) => {
     try {
@@ -52,6 +54,8 @@ export default function SignatureForm() {
 
   const handleSubmit = async (formData: FormData) => {
     try {
+      setIsSubmitting(true);
+
       if (!formData.file) {
         throw new Error("Please select a file to upload");
       }
@@ -86,28 +90,36 @@ export default function SignatureForm() {
     } catch (err) {
       console.error("Error submitting form:", err);
       throw err;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8 border border-gray-200">
-      <div className="flex flex-col items-center mb-8">
-        <div className="w-24 h-24 relative mb-4">
+    <div className="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8 border border-gray-200">
+      {/* Loading Screen - Shows during form submission */}
+      {isSubmitting && <LoadingScreen />}
+
+      <div className="flex flex-col items-center mb-6 sm:mb-8">
+        {/* Responsive logo: smaller on mobile devices */}
+        <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 relative mb-3 sm:mb-4">
           <Image
             src="/ndi-logo.jpeg"
             alt="Bhutan NDI Digital Signature Logo"
             fill
-            sizes="(max-width: 768px) 100vw, 64px"
+            sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, 96px"
             className="object-contain"
+            priority
           />
         </div>
-        <h1 className="text-2xl font-bold text-center text-[#141B29]">
+        {/* Responsive heading: smaller font on mobile devices */}
+        <h1 className="text-lg sm:text-2xl font-bold text-center text-[#141B29] px-2">
           Bhutan NDI Digital Signature Portal
         </h1>
       </div>
 
       {response ? (
-        <div className="py-8 bg-white">
+        <div className="py-4 sm:py-6 md:py-8 bg-white">
           <SuccessMessage
             response={response}
             emailStatus={emailStatus}

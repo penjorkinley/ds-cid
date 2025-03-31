@@ -27,6 +27,115 @@ interface MultiStepFormProps {
   onSubmit: (formData: FormData) => Promise<void>;
 }
 
+// Enhanced responsive progress indicator component
+const StepIndicator = ({
+  currentStep,
+  setError,
+  setCurrentStep,
+  formData,
+}: {
+  currentStep: number;
+  setError: (error: string | null) => void;
+  setCurrentStep: (step: number) => void;
+  formData: FormData;
+}) => {
+  // Function to handle click on step indicator (only allow going back or
+  // clicking on steps that are accessible)
+  const handleStepClick = (step: number) => {
+    if (step < currentStep) {
+      setCurrentStep(step);
+      setError(null);
+    } else if (step === 2 && formData.file) {
+      // Can only go to step 2 if file is uploaded
+      if (formData.file.type !== "application/pdf") {
+        setError("Only PDF files are supported for digital signatures");
+        return;
+      }
+      setCurrentStep(2);
+      setError(null);
+    }
+  };
+
+  return (
+    <div className="mb-6 sm:mb-8">
+      <div className="flex items-center justify-between w-full">
+        {/* Step 1 */}
+        <div
+          className="flex flex-col items-center"
+          onClick={() => handleStepClick(1)}
+        >
+          <div
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-sm sm:text-base transition-colors duration-300 
+              ${
+                currentStep >= 1
+                  ? "bg-[#5AC893] shadow-md shadow-[#5AC893]/20"
+                  : "bg-gray-300"
+              } 
+              ${currentStep !== 1 ? "cursor-pointer hover:bg-[#4bb382]" : ""}`}
+          >
+            1
+          </div>
+          <div className="mt-2 text-xs sm:text-sm font-medium text-center">
+            <span
+              className={currentStep === 1 ? "text-[#5AC893]" : "text-gray-700"}
+            >
+              Document<span className="hidden xs:inline"> Details</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Progress line */}
+        <div className="relative flex-1 mx-2 sm:mx-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="h-1 w-full bg-gray-200 rounded-full"></div>
+          </div>
+          <div className="absolute inset-0 flex items-center">
+            <div
+              className={`h-1 bg-[#5AC893] rounded-full transition-all duration-500 ease-in-out ${
+                currentStep >= 2 ? "w-full" : "w-0"
+              }`}
+            ></div>
+          </div>
+        </div>
+
+        {/* Step 2 */}
+        <div
+          className="flex flex-col items-center"
+          onClick={() => handleStepClick(2)}
+        >
+          <div
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-sm sm:text-base relative transition-colors duration-300
+              ${
+                currentStep >= 2
+                  ? "bg-[#5AC893] shadow-md shadow-[#5AC893]/20"
+                  : "bg-gray-300"
+              }
+              ${
+                currentStep === 1 && formData.file
+                  ? "cursor-pointer hover:bg-gray-400"
+                  : ""
+              }`}
+          >
+            2
+            {currentStep === 1 &&
+              formData.file &&
+              formData.file.type === "application/pdf" && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              )}
+          </div>
+          <div className="mt-2 text-xs sm:text-sm font-medium text-center">
+            <span
+              className={currentStep === 2 ? "text-[#5AC893]" : "text-gray-700"}
+            >
+              Signature<span className="hidden xs:inline"> Placement</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<FormData>({
@@ -56,6 +165,11 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
 
   const handleFirstStepSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!isFormValid()) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
     if (!formData.file) {
       setError("Please select a file to upload");
       return;
@@ -110,38 +224,42 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
     // Empty function to satisfy the interface
   };
 
+  // Validation function to check if all required fields are filled
+  const isFormValid = () => {
+    return (
+      formData.name.trim() !== "" &&
+      formData.email.trim() !== "" &&
+      formData.cid.trim() !== "" &&
+      formData.file !== null
+    );
+  };
+
+  // Helper function to check email validity
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Get the missing fields for the hint message
+  const getMissingFields = () => {
+    const missing = [];
+    if (formData.name.trim() === "") missing.push("Name");
+    if (formData.email.trim() === "") missing.push("Email");
+    else if (!isValidEmail(formData.email)) missing.push("Valid Email");
+    if (formData.cid.trim() === "") missing.push("CID");
+    if (formData.file === null) missing.push("Document");
+    return missing;
+  };
+
   return (
     <div className="w-full">
-      {/* Progress indicator */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${
-                currentStep >= 1 ? "bg-[#5AC893]" : "bg-gray-300"
-              }`}
-            >
-              1
-            </div>
-            <div className="ml-2">Document Details</div>
-          </div>
-          <div
-            className={`flex-1 h-1 mx-4 ${
-              currentStep >= 2 ? "bg-[#5AC893]" : "bg-gray-200"
-            }`}
-          ></div>
-          <div className="flex items-center">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${
-                currentStep >= 2 ? "bg-[#5AC893]" : "bg-gray-300"
-              }`}
-            >
-              2
-            </div>
-            <div className="ml-2">Signature Placement</div>
-          </div>
-        </div>
-      </div>
+      {/* New responsive progress indicator */}
+      <StepIndicator
+        currentStep={currentStep}
+        setError={setError}
+        setCurrentStep={setCurrentStep}
+        formData={formData}
+      />
 
       {error && (
         <div className="p-3 mb-6 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
@@ -160,7 +278,9 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
             handleSubmit={handleFormSubmit}
           />
           <div className="mt-6">
-            <Button type="submit">Next</Button>
+            <Button type="submit" disabled={!isFormValid()}>
+              {isFormValid() ? "Next" : "Please fill all required fields"}
+            </Button>
           </div>
         </form>
       )}
@@ -172,16 +292,25 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
             onChange={handleSignaturePlaceholdersChange}
             placeholders={formData.signaturePlaceholders}
           />
-          <div className="flex gap-4 mt-6">
-            <Button onClick={handleBack} fullWidth={false} type="button">
+          <div className="flex flex-col sm:flex-row gap-4 mt-6">
+            <Button
+              onClick={handleBack}
+              fullWidth={true}
+              className="order-2 sm:order-1"
+              type="button"
+            >
               Back
             </Button>
             <Button
               onClick={handleFinalSubmit}
               isLoading={isSubmitting}
+              className="order-1 sm:order-2"
               type="button"
+              disabled={formData.signaturePlaceholders.length === 0}
             >
-              Submit
+              {formData.signaturePlaceholders.length === 0
+                ? "Add signature field"
+                : "Submit"}
             </Button>
           </div>
         </div>

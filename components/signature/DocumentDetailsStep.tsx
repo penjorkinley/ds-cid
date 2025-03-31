@@ -25,45 +25,79 @@ export default function DocumentForm({
   handleFileChange,
 }: DocumentFormProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full">
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
           {error}
         </div>
       )}
 
-      <Input
-        id="name"
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        placeholder="Enter Recipient's Name..."
-        required
-      />
+      <div className="space-y-4">
+        <div>
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Recipient's Name
+          </label>
+          <Input
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="Enter Recipient's Name..."
+            required
+          />
+        </div>
 
-      <Input
-        id="email"
-        name="email"
-        type="email"
-        value={formData.email}
-        onChange={handleChange}
-        placeholder="Enter Recipient's Email Address..."
-        required
-      />
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Email Address
+          </label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Enter Recipient's Email Address..."
+            required
+          />
+        </div>
 
-      <Input
-        id="cid"
-        name="cid"
-        value={formData.cid}
-        onChange={handleChange}
-        placeholder="Enter Recipient's CID..."
-        required
-      />
+        <div>
+          <label
+            htmlFor="cid"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            CID
+          </label>
+          <Input
+            id="cid"
+            name="cid"
+            value={formData.cid}
+            onChange={handleChange}
+            placeholder="Enter Recipient's CID..."
+            required
+          />
+        </div>
 
-      <FileUpload
-        onFileSelect={handleFileChange}
-        selectedFile={formData.file}
-      />
+        <div>
+          <label
+            htmlFor="file"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Document
+          </label>
+          <FileUpload
+            onFileSelect={handleFileChange}
+            selectedFile={formData.file}
+          />
+        </div>
+      </div>
     </div>
   );
 }

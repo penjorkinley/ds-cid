@@ -6,6 +6,8 @@ interface ButtonProps {
   onClick?: () => void;
   isLoading?: boolean;
   fullWidth?: boolean;
+  disabled?: boolean;
+  className?: string;
 }
 
 export default function Button({
@@ -14,15 +16,21 @@ export default function Button({
   onClick,
   isLoading = false,
   fullWidth = true,
+  disabled = false,
+  className = "",
 }: ButtonProps) {
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={isLoading}
-      className={`bg-[#5AC893] hover:bg-[#4ba578] text-white font-medium py-3 px-6 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5AC893] cursor-pointer ${
+      disabled={isLoading || disabled}
+      className={`bg-[#5AC893] text-white font-medium py-3 px-6 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5AC893] ${
         fullWidth ? "w-full" : ""
-      } ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
+      } ${
+        isLoading || disabled
+          ? "opacity-50 cursor-not-allowed"
+          : "hover:bg-[#4ba578] cursor-pointer"
+      } ${className}`}
     >
       {isLoading ? (
         <div className="flex items-center justify-center">
