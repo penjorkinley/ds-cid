@@ -155,7 +155,7 @@ export default function VerificationForm() {
           <div className="space-y-2">
             <label
               htmlFor="documentFile"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 mb-4"
             >
               Upload Document
             </label>

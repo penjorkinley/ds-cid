@@ -38,7 +38,7 @@ export default function DocumentForm({
         <div>
           <label
             htmlFor="name"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 mb-4"
           >
             Recipient&apos;s Name
           </label>
@@ -58,7 +58,7 @@ export default function DocumentForm({
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 mb-4"
           >
             Email Address
           </label>
@@ -79,7 +79,7 @@ export default function DocumentForm({
         <div>
           <label
             htmlFor="cid"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 mb-4"
           >
             CID
           </label>
@@ -97,7 +97,7 @@ export default function DocumentForm({
         <div>
           <label
             htmlFor="file"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 mb-4"
           >
             Document
           </label>
