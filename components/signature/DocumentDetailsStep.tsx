@@ -1,6 +1,8 @@
 import React from "react";
 import Input from "@/components/ui/Input";
 import FileUpload from "@/components/ui/FileUpload";
+import { z } from "zod";
+import { getFieldError } from "@/utils/validation-schemas";
 
 interface FormData {
   name: string;
@@ -12,6 +14,7 @@ interface FormData {
 interface DocumentFormProps {
   formData: FormData;
   error: string | null;
+  fieldErrors?: z.ZodError | null | undefined;
   isSubmitting: boolean;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleFileChange: (file: File) => void;
@@ -21,16 +24,23 @@ interface DocumentFormProps {
 export default function DocumentForm({
   formData,
   error,
+  fieldErrors,
   handleChange,
   handleFileChange,
 }: DocumentFormProps) {
+  // Get individual field error messages
+  const nameError = getFieldError(fieldErrors, "name");
+  const emailError = getFieldError(fieldErrors, "email");
+  const cidError = getFieldError(fieldErrors, "cid");
+  const fileError = getFieldError(fieldErrors, "file");
+
   return (
     <div className="space-y-4 sm:space-y-6 w-full">
-      {error && (
+      {/* {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
           {error}
         </div>
-      )}
+      )} */}
 
       <div className="space-y-4">
         <div>
@@ -48,6 +58,9 @@ export default function DocumentForm({
             placeholder="Enter Recipient's Name..."
             required
           />
+          {nameError && (
+            <p className="mt-1 text-sm text-red-600">{nameError}</p>
+          )}
         </div>
 
         <div>
@@ -66,6 +79,9 @@ export default function DocumentForm({
             placeholder="Enter Recipient's Email Address..."
             required
           />
+          {emailError && (
+            <p className="mt-1 text-sm text-red-600">{emailError}</p>
+          )}
         </div>
 
         <div>
@@ -80,9 +96,10 @@ export default function DocumentForm({
             name="cid"
             value={formData.cid}
             onChange={handleChange}
-            placeholder="Enter Recipient's CID..."
+            placeholder="Enter Recipient's CID (11 digits)..."
             required
           />
+          {cidError && <p className="mt-1 text-sm text-red-600">{cidError}</p>}
         </div>
 
         <div>
@@ -96,6 +113,9 @@ export default function DocumentForm({
             onFileSelect={handleFileChange}
             selectedFile={formData.file}
           />
+          {fileError && (
+            <p className="mt-1 text-sm text-red-600">{fileError}</p>
+          )}
         </div>
       </div>
     </div>

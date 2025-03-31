@@ -4,6 +4,8 @@ import { useState } from "react";
 import DocumentForm from "@/components/signature/DocumentDetailsStep";
 import PDFSignaturePlacement from "./PDFSignaturePlacement";
 import Button from "@/components/ui/Button";
+import { z } from "zod";
+import { validateForm } from "@/utils/validation-schemas";
 
 interface FormData {
   name: string;
@@ -32,26 +34,38 @@ const StepIndicator = ({
   setError,
   setCurrentStep,
   formData,
+  setValidationErrors,
 }: {
   currentStep: number;
   setError: (error: string | null) => void;
   setCurrentStep: (step: number) => void;
   formData: FormData;
+  setValidationErrors: (errors: z.ZodError | null) => void;
 }) => {
-  // Function to handle click on step indicator (only allow going back or
-  // clicking on steps that are accessible)
+  // Function to handle click on step indicator
   const handleStepClick = (step: number) => {
     if (step < currentStep) {
       setCurrentStep(step);
       setError(null);
+      setValidationErrors(null);
     } else if (step === 2 && formData.file) {
-      // Can only go to step 2 if file is uploaded
+      // Validate form before proceeding to step 2
+      const { success, error } = validateForm(formData);
+
+      if (!success) {
+        setValidationErrors(error);
+        return;
+      }
+
+      // Check if file is PDF
       if (formData.file.type !== "application/pdf") {
         setError("Only PDF files are supported for digital signatures");
         return;
       }
+
       setCurrentStep(2);
       setError(null);
+      setValidationErrors(null);
     }
   };
 
@@ -145,6 +159,9 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
     signaturePlaceholders: [],
   });
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<z.ZodError | null>(
+    null
+  );
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,23 +181,28 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
 
   const handleFirstStepSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!isFormValid()) {
-      setError("Please fill in all required fields");
+
+    // Validate the form using Zod
+    const { success, error: zodError } = validateForm(formData);
+
+    if (!success) {
+      setValidationErrors(zodError);
+
+      // Don't set a general error message for field-specific validations
+      // Instead, let the field-specific error messages handle this
+
       return;
     }
 
-    if (!formData.file) {
-      setError("Please select a file to upload");
-      return;
-    }
-
-    // Only allow PDF files for the signature placement step
-    if (formData.file.type !== "application/pdf") {
+    // If form is valid but not a PDF, show specific error
+    if (formData.file && formData.file.type !== "application/pdf") {
       setError("Only PDF files are supported for digital signatures");
       return;
     }
 
+    // Clear any previous errors and proceed to step 2
     setError(null);
+    setValidationErrors(null);
     setCurrentStep(2);
   };
 
@@ -195,6 +217,8 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
 
   const handleBack = () => {
     setCurrentStep(1);
+    setError(null);
+    setValidationErrors(null);
   };
 
   const handleFinalSubmit = async () => {
@@ -218,34 +242,30 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
     }
   };
 
-  // Fixed the unused parameter issue
+  // Function to satisfy the interface
   const handleFormSubmit = () => {
-    // Empty function to satisfy the interface
+    // Empty function
   };
 
-  // Validation function to check if all required fields are filled
-  const isFormValid = () => {
-    return (
-      formData.name.trim() !== "" &&
-      formData.email.trim() !== "" &&
-      formData.cid.trim() !== "" &&
-      formData.file !== null
-    );
+  // Check if form is valid based on Zod validation
+  const isFormValid = (): boolean => {
+    const { success } = validateForm(formData);
+    return success;
   };
-
-  // Removed unused isValidEmail function and getMissingFields function
 
   return (
     <div className="w-full">
-      {/* New responsive progress indicator */}
+      {/* Progress indicator */}
       <StepIndicator
         currentStep={currentStep}
         setError={setError}
         setCurrentStep={setCurrentStep}
         formData={formData}
+        setValidationErrors={setValidationErrors}
       />
 
-      {error && (
+      {/* Only show non-field validation errors in the top error box */}
+      {error && !validationErrors && (
         <div className="p-3 mb-6 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
           {error}
         </div>
@@ -256,13 +276,22 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
           <DocumentForm
             formData={formData}
             error={null}
+            fieldErrors={validationErrors}
             isSubmitting={isSubmitting}
             handleChange={handleChange}
             handleFileChange={handleFileChange}
             handleSubmit={handleFormSubmit}
           />
           <div className="mt-6">
-            <Button type="submit" disabled={!isFormValid()}>
+            <Button
+              type="submit"
+              disabled={
+                !formData.name ||
+                !formData.email ||
+                !formData.cid ||
+                !formData.file
+              }
+            >
               {isFormValid() ? "Next" : "Please fill all required fields"}
             </Button>
           </div>
