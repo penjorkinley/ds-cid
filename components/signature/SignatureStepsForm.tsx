@@ -1,4 +1,3 @@
-// components/signature/SignatureStepsForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -234,13 +233,7 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
     );
   };
 
-  // Helper function to check email validity
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  // Removed unused getMissingFields function
+  // Removed unused isValidEmail function and getMissingFields function
 
   return (
     <div className="w-full">
