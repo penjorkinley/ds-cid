@@ -240,16 +240,7 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
     return emailRegex.test(email);
   };
 
-  // Get the missing fields for the hint message
-  const getMissingFields = () => {
-    const missing = [];
-    if (formData.name.trim() === "") missing.push("Name");
-    if (formData.email.trim() === "") missing.push("Email");
-    else if (!isValidEmail(formData.email)) missing.push("Valid Email");
-    if (formData.cid.trim() === "") missing.push("CID");
-    if (formData.file === null) missing.push("Document");
-    return missing;
-  };
+  // Removed unused getMissingFields function
 
   return (
     <div className="w-full">

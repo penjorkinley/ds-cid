@@ -36,7 +36,7 @@ export default function LoadingScreen({
           Processing your request...
         </p>
         <p className="mt-2 text-sm text-gray-600 text-center">
-          This may take a few moments. Please don't close the window.
+          This may take a few moments. Please don&apos;t close the window.
         </p>
       </div>
     </div>

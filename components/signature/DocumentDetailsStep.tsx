@@ -38,7 +38,7 @@ export default function DocumentForm({
             htmlFor="name"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Recipient's Name
+            Recipient&apos;s Name
           </label>
           <Input
             id="name"
