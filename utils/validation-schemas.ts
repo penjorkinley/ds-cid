@@ -9,7 +9,7 @@ export const documentFormSchema = z.object({
   cid: z
     .string()
     .min(1, "CID is required")
-    .length(11, "CID must be exactly 11 digits")
+    // .length(11, "CID must be exactly 11 digits")
     .regex(/^\d+$/, "CID must contain only numbers"),
   file: z.instanceof(File, { message: "Please upload a document" }),
 });
