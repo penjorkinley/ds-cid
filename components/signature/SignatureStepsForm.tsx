@@ -1,19 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import DocumentForm from "@/components/signature/DocumentDetailsStep";
-import PDFSignaturePlacement from "./PDFSignaturePlacement";
 import Button from "@/components/ui/Button";
-import { z } from "zod";
-import { validateForm } from "@/utils/validation-schemas";
-
-interface FormData {
-  name: string;
-  email: string;
-  cid: string;
-  file: File | null;
-  signaturePlaceholders: SignaturePlaceholder[];
-}
+import StepIndicator, { Step } from "@/components/ui/StepIndicator";
+import RecipientStep, { Recipient } from "@/components/signature/RecipientStep";
+import DocumentUploadStep from "@/components/signature/DocumentUploadStep";
+import PDFSignaturePlacement from "./PDFSignaturePlacement";
 
 export interface SignaturePlaceholder {
   id: string;
@@ -24,154 +16,48 @@ export interface SignaturePlaceholder {
   pageNumber: number;
 }
 
+export interface FormData {
+  recipients: Recipient[];
+  file: File | null;
+  signaturePlaceholders: SignaturePlaceholder[];
+}
+
 interface MultiStepFormProps {
   onSubmit: (formData: FormData) => Promise<void>;
 }
 
-// Enhanced responsive progress indicator component
-const StepIndicator = ({
-  currentStep,
-  setError,
-  setCurrentStep,
-  formData,
-  setValidationErrors,
-}: {
-  currentStep: number;
-  setError: (error: string | null) => void;
-  setCurrentStep: (step: number) => void;
-  formData: FormData;
-  setValidationErrors: (errors: z.ZodError | null) => void;
-}) => {
-  // Function to handle click on step indicator
-  const handleStepClick = (step: number) => {
-    if (step < currentStep) {
-      setCurrentStep(step);
-      setError(null);
-      setValidationErrors(null);
-    } else if (step === 2 && formData.file) {
-      // Validate form before proceeding to step 2
-      const { success, error } = validateForm(formData);
+// Error alert component for reusability
+const ErrorAlert = ({ message }: { message: string }) => (
+  <div className="p-3 mb-6 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+    {message}
+  </div>
+);
 
-      if (!success) {
-        setValidationErrors(error);
-        return;
-      }
-
-      // Check if file is PDF
-      if (formData.file.type !== "application/pdf") {
-        setError("Only PDF files are supported for digital signatures");
-        return;
-      }
-
-      setCurrentStep(2);
-      setError(null);
-      setValidationErrors(null);
-    }
-  };
-
-  return (
-    <div className="mb-6 sm:mb-8">
-      <div className="flex items-center justify-between w-full">
-        {/* Step 1 */}
-        <div
-          className="flex flex-col items-center"
-          onClick={() => handleStepClick(1)}
-        >
-          <div
-            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-sm sm:text-base transition-colors duration-300 
-              ${
-                currentStep >= 1
-                  ? "bg-[#5AC893] shadow-md shadow-[#5AC893]/20"
-                  : "bg-gray-300"
-              } 
-              ${currentStep !== 1 ? "cursor-pointer hover:bg-[#4bb382]" : ""}`}
-          >
-            1
-          </div>
-          <div className="mt-2 text-xs sm:text-sm font-medium text-center">
-            <span
-              className={currentStep === 1 ? "text-[#5AC893]" : "text-gray-700"}
-            >
-              Document<span className="hidden xs:inline"> Details</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Progress line */}
-        <div className="relative flex-1 mx-2 sm:mx-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="h-1 w-full bg-gray-200 rounded-full"></div>
-          </div>
-          <div className="absolute inset-0 flex items-center">
-            <div
-              className={`h-1 bg-[#5AC893] rounded-full transition-all duration-500 ease-in-out ${
-                currentStep >= 2 ? "w-full" : "w-0"
-              }`}
-            ></div>
-          </div>
-        </div>
-
-        {/* Step 2 */}
-        <div
-          className="flex flex-col items-center"
-          onClick={() => handleStepClick(2)}
-        >
-          <div
-            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-sm sm:text-base relative transition-colors duration-300
-              ${
-                currentStep >= 2
-                  ? "bg-[#5AC893] shadow-md shadow-[#5AC893]/20"
-                  : "bg-gray-300"
-              }
-              ${
-                currentStep === 1 && formData.file
-                  ? "cursor-pointer hover:bg-gray-400"
-                  : ""
-              }`}
-          >
-            2
-            {currentStep === 1 &&
-              formData.file &&
-              formData.file.type === "application/pdf" && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              )}
-          </div>
-          <div className="mt-2 text-xs sm:text-sm font-medium text-center">
-            <span
-              className={currentStep === 2 ? "text-[#5AC893]" : "text-gray-700"}
-            >
-              Signature<span className="hidden xs:inline"> Placement</span>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
+export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<FormData>({
-    name: "",
-    email: "",
-    cid: "",
+    recipients: [],
     file: null,
     signaturePlaceholders: [],
   });
   const [error, setError] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<z.ZodError | null>(
-    null
-  );
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const steps: Step[] = [
+    { number: 1, title: "Add Recipient", subtitle: "Add document recipients" },
+    { number: 2, title: "Add Document", subtitle: "Upload your document" },
+    { number: 3, title: "Add Signature", subtitle: "Place signature fields" },
+  ];
+
+  // Handle recipient updates
+  const handleRecipientsChange = (recipients: Recipient[]) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      recipients,
     }));
   };
 
+  // Handle file upload
   const handleFileChange = (file: File) => {
     setFormData((prev) => ({
       ...prev,
@@ -179,33 +65,7 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
     }));
   };
 
-  const handleFirstStepSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    // Validate the form using Zod
-    const { success, error: zodError } = validateForm(formData);
-
-    if (!success) {
-      setValidationErrors(zodError);
-
-      // Don't set a general error message for field-specific validations
-      // Instead, let the field-specific error messages handle this
-
-      return;
-    }
-
-    // If form is valid but not a PDF, show specific error
-    if (formData.file && formData.file.type !== "application/pdf") {
-      setError("Only PDF files are supported for digital signatures");
-      return;
-    }
-
-    // Clear any previous errors and proceed to step 2
-    setError(null);
-    setValidationErrors(null);
-    setCurrentStep(2);
-  };
-
+  // Handle signature placeholder updates
   const handleSignaturePlaceholdersChange = (
     placeholders: SignaturePlaceholder[]
   ) => {
@@ -215,13 +75,62 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
     }));
   };
 
-  const handleBack = () => {
-    setCurrentStep(1);
-    setError(null);
-    setValidationErrors(null);
+  // Check if we can proceed to a specific step
+  const canProceedToStep = (step: number): boolean => {
+    if (step <= currentStep) return true;
+
+    if (step === 2) {
+      return formData.recipients.length > 0;
+    }
+
+    if (step === 3) {
+      return (
+        formData.recipients.length > 0 &&
+        formData.file !== null &&
+        formData.file.type === "application/pdf"
+      );
+    }
+
+    return false;
   };
 
-  const handleFinalSubmit = async () => {
+  // Handle step navigation
+  const handleStepClick = (step: number) => {
+    if (canProceedToStep(step)) {
+      setCurrentStep(step);
+      setError(null);
+    }
+  };
+
+  // Navigate to next step
+  const handleNext = () => {
+    if (currentStep === 1 && formData.recipients.length === 0) {
+      setError("Please add at least one recipient");
+      return;
+    }
+
+    if (currentStep === 2 && !formData.file) {
+      setError("Please upload a document");
+      return;
+    }
+
+    if (currentStep === 2 && formData.file?.type !== "application/pdf") {
+      setError("Only PDF files are supported for digital signatures");
+      return;
+    }
+
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length));
+    setError(null);
+  };
+
+  // Navigate to previous step
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    setError(null);
+  };
+
+  // Handle final form submission
+  const handleSubmit = async () => {
     if (formData.signaturePlaceholders.length === 0) {
       setError("Please add at least one signature placeholder");
       return;
@@ -242,91 +151,97 @@ export default function MultiStepForm({ onSubmit }: MultiStepFormProps) {
     }
   };
 
-  // Function to satisfy the interface
-  const handleFormSubmit = () => {
-    // Empty function
-  };
+  // Get the next button text based on current step and form state
+  const getNextButtonText = (): string => {
+    if (currentStep === 1 && formData.recipients.length === 0) {
+      return "Add at least one recipient";
+    }
 
-  // Check if form is valid based on Zod validation
-  const isFormValid = (): boolean => {
-    const { success } = validateForm(formData);
-    return success;
+    if (currentStep === 3 && formData.signaturePlaceholders.length === 0) {
+      return "Add signature field";
+    }
+
+    return currentStep === steps.length ? "Submit" : "Next";
   };
 
   return (
     <div className="w-full">
       {/* Progress indicator */}
       <StepIndicator
+        steps={steps}
         currentStep={currentStep}
-        setError={setError}
-        setCurrentStep={setCurrentStep}
-        formData={formData}
-        setValidationErrors={setValidationErrors}
+        onStepClick={handleStepClick}
+        canProceedToStep={canProceedToStep}
       />
 
-      {/* Only show non-field validation errors in the top error box */}
-      {error && !validationErrors && (
-        <div className="p-3 mb-6 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-          {error}
-        </div>
-      )}
+      {/* Error message */}
+      {error && <ErrorAlert message={error} />}
 
-      {currentStep === 1 && (
-        <form onSubmit={handleFirstStepSubmit}>
-          <DocumentForm
-            formData={formData}
-            fieldErrors={validationErrors}
-            isSubmitting={isSubmitting}
-            handleChange={handleChange}
-            handleFileChange={handleFileChange}
-            handleSubmit={handleFormSubmit}
+      {/* Step content */}
+      <div className="mb-6">
+        {currentStep === 1 && (
+          <RecipientStep
+            recipients={formData.recipients}
+            onRecipientsChange={handleRecipientsChange}
           />
-          <div className="mt-6">
-            <Button
-              type="submit"
-              disabled={
-                !formData.name ||
-                !formData.email ||
-                !formData.cid ||
-                !formData.file
-              }
-            >
-              {isFormValid() ? "Next" : "Please fill all required fields"}
-            </Button>
-          </div>
-        </form>
-      )}
+        )}
 
-      {currentStep === 2 && formData.file && (
-        <div>
+        {currentStep === 2 && (
+          <DocumentUploadStep
+            file={formData.file}
+            onFileChange={handleFileChange}
+            error={error}
+          />
+        )}
+
+        {currentStep === 3 && formData.file && (
           <PDFSignaturePlacement
             file={formData.file}
             onChange={handleSignaturePlaceholdersChange}
             placeholders={formData.signaturePlaceholders}
           />
-          <div className="flex flex-col sm:flex-row gap-4 mt-6">
-            <Button
-              onClick={handleBack}
-              fullWidth={true}
-              className="order-2 sm:order-1"
-              type="button"
-            >
-              Back
-            </Button>
-            <Button
-              onClick={handleFinalSubmit}
-              isLoading={isSubmitting}
-              className="order-1 sm:order-2"
-              type="button"
-              disabled={formData.signaturePlaceholders.length === 0}
-            >
-              {formData.signaturePlaceholders.length === 0
-                ? "Add signature field"
-                : "Submit"}
-            </Button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Navigation buttons */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        {currentStep > 1 && (
+          <Button
+            onClick={handleBack}
+            fullWidth={false}
+            className="order-2 sm:order-1 sm:w-1/2"
+            type="button"
+          >
+            Back
+          </Button>
+        )}
+
+        {currentStep < steps.length ? (
+          <Button
+            onClick={handleNext}
+            className={`order-1 sm:order-2 ${
+              currentStep > 1 ? "sm:w-1/2" : "w-full"
+            }`}
+            type="button"
+            disabled={
+              (currentStep === 1 && formData.recipients.length === 0) ||
+              (currentStep === 2 && !formData.file)
+            }
+          >
+            {getNextButtonText()}
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSubmit}
+            isLoading={isSubmitting}
+            className="order-1 sm:order-2 sm:w-1/2"
+            type="button"
+            disabled={formData.signaturePlaceholders.length === 0}
+          >
+            {getNextButtonText()}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

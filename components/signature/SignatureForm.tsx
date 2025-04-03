@@ -8,11 +8,12 @@ import SuccessMessage from "@/components/success/SuccessMessage";
 import MultiStepForm, {
   SignaturePlaceholder,
 } from "@/components/signature/SignatureStepsForm";
+import { Recipient } from "@/components/signature/RecipientStep";
+import EmailStatus from "@/components/success/EmailStatus";
 
-interface FormData {
-  name: string;
-  email: string;
-  cid: string;
+// Interface for our updated multi-recipient form data
+interface MultiRecipientFormData {
+  recipients: Recipient[];
   file: File | null;
   signaturePlaceholders: SignaturePlaceholder[];
 }
@@ -22,26 +23,49 @@ export default function SignatureForm() {
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const sendEmailWithQRCode = async (response: UploadResponse) => {
+  const sendEmailWithQRCode = async (
+    response: UploadResponse,
+    recipients: Recipient[]
+  ) => {
     try {
-      setEmailStatus("Sending email with QR code...");
+      setEmailStatus("Sending emails with QR codes...");
 
-      const emailResponse = await fetch("/api/send-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ response }),
+      // Create an array of promises for sending emails to all recipients
+      const emailPromises = recipients.map(async (recipient) => {
+        const recipientResponse = {
+          ...response,
+          email: recipient.email,
+          name: recipient.name,
+        };
+
+        const emailResponse = await fetch("/api/send-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ response: recipientResponse }),
+        });
+
+        if (!emailResponse.ok) {
+          const errorData = await emailResponse.json();
+          throw new Error(
+            errorData.message || `Server error: ${emailResponse.status}`
+          );
+        }
+
+        return recipient.email;
       });
 
-      if (!emailResponse.ok) {
-        const errorData = await emailResponse.json();
-        throw new Error(
-          errorData.message || `Server error: ${emailResponse.status}`
+      // Wait for all emails to be sent
+      const sentEmails = await Promise.all(emailPromises);
+
+      if (sentEmails.length === 1) {
+        setEmailStatus(`Email sent successfully to ${sentEmails[0]}`);
+      } else {
+        setEmailStatus(
+          `Emails sent successfully to ${sentEmails.length} recipients`
         );
       }
-
-      setEmailStatus("Email sent successfully to " + response.email);
     } catch (err) {
       console.error("Error sending email:", err);
       setEmailStatus(
@@ -52,7 +76,7 @@ export default function SignatureForm() {
     }
   };
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (formData: MultiRecipientFormData) => {
     try {
       setIsSubmitting(true);
 
@@ -60,24 +84,19 @@ export default function SignatureForm() {
         throw new Error("Please select a file to upload");
       }
 
-      // Add signature placeholders to form data before sending to API
-      const formDataWithSignatures = new FormData();
-      formDataWithSignatures.append("name", formData.name);
-      formDataWithSignatures.append("email", formData.email);
-      formDataWithSignatures.append("cid", formData.cid);
-      formDataWithSignatures.append("file", formData.file);
+      if (formData.recipients.length === 0) {
+        throw new Error("Please add at least one recipient");
+      }
 
-      // Convert placeholders to JSON and add them to the form data
-      formDataWithSignatures.append(
-        "signaturePlaceholders",
-        JSON.stringify(formData.signaturePlaceholders)
-      );
+      // Use the first recipient for the initial API call
+      // (You might need to modify the API to handle multiple recipients)
+      const primaryRecipient = formData.recipients[0];
 
-      // Update the uploadDocument function to handle the signature placeholders
+      // Convert our new recipient format to what the API expects
       const result = await uploadDocument({
-        name: formData.name,
-        email: formData.email,
-        cid: formData.cid,
+        name: primaryRecipient.name,
+        email: primaryRecipient.email,
+        cid: primaryRecipient.idValue, // Assuming idValue for CID type corresponds to the cid field
         file: formData.file,
         signaturePlaceholders: formData.signaturePlaceholders,
       });
@@ -85,8 +104,8 @@ export default function SignatureForm() {
       console.log("Raw API Response:", result);
       setResponse(result);
 
-      // Send email with QR code
-      await sendEmailWithQRCode(result);
+      // Send email with QR code to all recipients
+      await sendEmailWithQRCode(result, formData.recipients);
     } catch (err) {
       console.error("Error submitting form:", err);
       throw err;
@@ -117,6 +136,9 @@ export default function SignatureForm() {
           Bhutan NDI Digital Signature Portal
         </h1>
       </div>
+
+      {/* Email status notification */}
+      {emailStatus && <EmailStatus status={emailStatus} />}
 
       {response ? (
         <div className="py-4 sm:py-6 md:py-8 bg-white">

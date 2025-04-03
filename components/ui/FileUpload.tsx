@@ -118,7 +118,7 @@ export default function FileUpload({
                 fileInputRef.current.value = "";
               }
             }}
-            className="text-red-500 hover:text-red-700"
+            className="text-red-500 hover:text-red-700 cursor-pointer"
           >
             Remove
           </button>
