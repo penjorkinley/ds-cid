@@ -5,15 +5,22 @@ export interface SignaturePlaceholder {
   width: number;
   height: number;
   pageNumber: number;
+  recipientId?: string;
+  order?: number;
+}
+
+export interface Recipient {
+  id: string;
+  name: string;
+  email: string;
+  cid: string;
 }
 
 export interface UploadResponse {
   documentId: string;
   documentHash: string;
   documentViewUrl: string;
-  name: string;
-  email: string;
-  cid: string;
+  recipients: Recipient[]; // Changed to array of recipients
   organizationId?: string;
   message: string;
   signaturePlaceholders?: SignaturePlaceholder[];
@@ -21,9 +28,7 @@ export interface UploadResponse {
 }
 
 export interface UploadDocumentParams {
-  name: string;
-  email: string;
-  cid: string;
+  recipients: Recipient[]; // Changed to array of recipients
   file: File;
   signaturePlaceholders?: SignaturePlaceholder[];
 }
@@ -31,19 +36,35 @@ export interface UploadDocumentParams {
 export async function uploadDocument(
   params: UploadDocumentParams
 ): Promise<UploadResponse> {
-  const { name, email, cid, file, signaturePlaceholders } = params;
+  const { recipients, file, signaturePlaceholders } = params;
 
   const formData = new FormData();
-  formData.append("name", name);
-  formData.append("email", email);
-  formData.append("cid", cid);
+
+  // Add recipients as JSON string
+  formData.append("recipients", JSON.stringify(recipients));
+
+  // Add file
   formData.append("file", file);
 
   // Add signature placeholders if available
   if (signaturePlaceholders && signaturePlaceholders.length > 0) {
+    // Clean signaturePlaceholders to remove unwanted properties
+    const cleanedPlaceholders = signaturePlaceholders.map(
+      ({ id, x, y, width, height, pageNumber, recipientId, order }) => ({
+        id,
+        x,
+        y,
+        width,
+        height,
+        pageNumber,
+        recipientId,
+        order,
+      })
+    );
+
     formData.append(
       "signaturePlaceholders",
-      JSON.stringify(signaturePlaceholders)
+      JSON.stringify(cleanedPlaceholders)
     );
   }
 
@@ -63,3 +84,36 @@ export async function uploadDocument(
 
   return response.json();
 }
+
+// // Backward compatibility function for single recipient use case
+// export async function uploadDocumentSingleRecipient(params: {
+//   name: string;
+//   email: string;
+//   cid: string;
+//   file: File;
+//   signaturePlaceholders?: SignaturePlaceholder[];
+// }): Promise<UploadResponse> {
+//   const { name, email, cid, file, signaturePlaceholders } = params;
+
+//   // Convert single recipient format to multi-recipient format
+//   const recipient: Recipient = {
+//     id: Date.now().toString(), // Generate a simple ID
+//     name,
+//     email,
+//     cid,
+//   };
+
+//   // Update placeholders to include recipient ID if not already present
+//   const updatedPlaceholders = signaturePlaceholders?.map((placeholder) => ({
+//     ...placeholder,
+//     recipientId: placeholder.recipientId || recipient.id,
+//     order: placeholder.order || 1,
+//   }));
+
+//   // Use the new multi-recipient function
+//   return uploadDocument({
+//     recipients: [recipient],
+//     file,
+//     signaturePlaceholders: updatedPlaceholders,
+//   });
+// }

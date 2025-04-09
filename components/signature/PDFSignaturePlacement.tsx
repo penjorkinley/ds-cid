@@ -3,20 +3,35 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Rnd } from "react-rnd";
-import { SignaturePlaceholder } from "@/components/signature/SignatureStepsForm";
 import { nanoid } from "nanoid";
+import RecipientSelectionModal from "./RecipientSelectionModal";
+import { Recipient } from "@/components/signature/RecipientStep";
 
 // Set the worker source to the local file in the public directory
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
+// Enhanced SignaturePlaceholder with recipient information
+export interface SignaturePlaceholder {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  pageNumber: number;
+  recipientId: string;
+  recipientName: string;
+  order: number;
+}
 
 interface ResponsiveControlPanelProps {
   scale: number;
   setScale: React.Dispatch<React.SetStateAction<number>>;
   resetZoom: () => void;
-  handleAddPlaceholder: () => void;
+  handleAddSignatory: () => void;
   numPages: number | null;
   currentPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
+  placeholderCount: number;
 }
 
 // Responsive control panel component
@@ -24,10 +39,11 @@ const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
   scale,
   setScale,
   resetZoom,
-  handleAddPlaceholder,
+  handleAddSignatory,
   numPages,
   currentPage,
   setCurrentPage,
+  placeholderCount,
 }) => {
   return (
     <div className="flex flex-col space-y-4 mb-4">
@@ -55,7 +71,6 @@ const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
           >
             <span className="text-lg font-bold">+</span>
           </button>
-          {/* Updated Fit button - now larger and more consistent with other controls */}
           <button
             type="button"
             onClick={resetZoom}
@@ -67,8 +82,8 @@ const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
         </div>
         <button
           type="button"
-          onClick={handleAddPlaceholder}
-          className="px-3 sm:px-4 py-2 text-white bg-[#5AC893] rounded hover:bg-[#4ba578] transition-colors text-sm sm:text-base flex items-center"
+          onClick={handleAddSignatory}
+          className="px-3 sm:px-4 py-2 text-white bg-[#5AC893] rounded hover:bg-[#4ba578] transition-colors text-sm sm:text-base flex items-center cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -82,7 +97,7 @@ const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
               clipRule="evenodd"
             />
           </svg>
-          Add signature
+          Add {getOrdinalSuffix(placeholderCount)} signatory
         </button>
       </div>
 
@@ -155,10 +170,28 @@ const MobileInstructions: React.FC = () => {
   );
 };
 
+// Helper function to get ordinal suffix (1st, 2nd, 3rd, etc.)
+function getOrdinalSuffix(num: number): string {
+  const j = num % 10;
+  const k = num % 100;
+
+  if (j === 1 && k !== 11) {
+    return num + "st";
+  }
+  if (j === 2 && k !== 12) {
+    return num + "nd";
+  }
+  if (j === 3 && k !== 13) {
+    return num + "rd";
+  }
+  return num + "th";
+}
+
 interface PDFSignaturePlacementProps {
   file: File;
   onChange: (placeholders: SignaturePlaceholder[]) => void;
   placeholders: SignaturePlaceholder[];
+  recipients: Recipient[];
 }
 
 interface PageData {
@@ -168,10 +201,39 @@ interface PageData {
   originalHeight?: number;
 }
 
+// Get placeholder color based on order
+const getPlaceholderColor = (
+  order: number
+): { border: string; bg: string; text: string } => {
+  const colors = [
+    { border: "border-blue-500", bg: "bg-blue-100", text: "text-blue-700" },
+    { border: "border-green-500", bg: "bg-green-100", text: "text-green-700" },
+    {
+      border: "border-purple-500",
+      bg: "bg-purple-100",
+      text: "text-purple-700",
+    },
+    {
+      border: "border-yellow-500",
+      bg: "bg-yellow-100",
+      text: "text-yellow-700",
+    },
+    { border: "border-pink-500", bg: "bg-pink-100", text: "text-pink-700" },
+    {
+      border: "border-indigo-500",
+      bg: "bg-indigo-100",
+      text: "text-indigo-700",
+    },
+  ];
+
+  return colors[(order - 1) % colors.length];
+};
+
 export default function PDFSignaturePlacement({
   file,
   onChange,
   placeholders,
+  recipients,
 }: PDFSignaturePlacementProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -185,6 +247,9 @@ export default function PDFSignaturePlacement({
   const [isDragging, setIsDragging] = useState(false);
   const scrollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Detect touch devices
   useEffect(() => {
@@ -250,17 +315,6 @@ export default function PDFSignaturePlacement({
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  // Update container size when window resizes
-  useEffect(() => {
-    const updateContainerSize = () => {
-      // Just keeping the function as a placeholder
-    };
-
-    updateContainerSize();
-    window.addEventListener("resize", updateContainerSize);
-    return () => window.removeEventListener("resize", updateContainerSize);
-  }, []);
-
   // Calculate optimal zoom to fit the container
   const calculateOptimalZoom = useCallback(() => {
     if (!containerRef.current || !pdfDimensions.width || !pdfDimensions.height)
@@ -321,7 +375,23 @@ export default function PDFSignaturePlacement({
     };
   };
 
-  const handleAddPlaceholder = () => {
+  // Get already assigned recipient IDs
+  const getAssignedRecipientIds = (): string[] => {
+    return placeholders.map((placeholder) => placeholder.recipientId);
+  };
+
+  // Get placeholder count (for the next placeholder)
+  const getPlaceholderCount = (): number => {
+    return placeholders.length + 1;
+  };
+
+  // Open the recipient selection modal
+  const handleAddSignatory = () => {
+    setIsModalOpen(true);
+  };
+
+  // Handle recipient selection from modal
+  const handleRecipientSelect = (recipient: Recipient) => {
     // Calculate center position of the current view
     const containerRect = containerRef.current?.getBoundingClientRect();
 
@@ -365,6 +435,7 @@ export default function PDFSignaturePlacement({
       centerY = bottomLeftCoords.y;
     }
 
+    // Create new placeholder with recipient information
     const newPlaceholder: SignaturePlaceholder = {
       id: nanoid(),
       x: centerX,
@@ -372,9 +443,13 @@ export default function PDFSignaturePlacement({
       width: 100 / scale, // Store normalized width
       height: 50 / scale, // Store normalized height
       pageNumber: currentPage,
+      recipientId: recipient.id,
+      recipientName: recipient.name,
+      order: placeholders.length + 1,
     };
 
     onChange([...placeholders, newPlaceholder]);
+    setIsModalOpen(false);
   };
 
   const handlePlaceholderChange = (
@@ -412,8 +487,21 @@ export default function PDFSignaturePlacement({
   };
 
   const handlePlaceholderRemove = (id: string) => {
-    console.log("Removing placeholder with ID:", id);
-    onChange(placeholders.filter((p) => p.id !== id));
+    // Get the order of the placeholder to be removed
+    const removedPlaceholder = placeholders.find((p) => p.id === id);
+    if (!removedPlaceholder) return;
+
+    const removedOrder = removedPlaceholder.order;
+
+    // Filter out the removed placeholder and update the order of remaining placeholders
+    const updatedPlaceholders = placeholders
+      .filter((p) => p.id !== id)
+      .map((p) => ({
+        ...p,
+        order: p.order > removedOrder ? p.order - 1 : p.order,
+      }));
+
+    onChange(updatedPlaceholders);
   };
 
   const currentPagePlaceholders = placeholders.filter(
@@ -470,10 +558,11 @@ export default function PDFSignaturePlacement({
         scale={scale}
         setScale={setScale}
         resetZoom={resetZoom}
-        handleAddPlaceholder={handleAddPlaceholder}
+        handleAddSignatory={handleAddSignatory}
         numPages={numPages}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
+        placeholderCount={getPlaceholderCount()}
       />
 
       <div
@@ -543,6 +632,9 @@ export default function PDFSignaturePlacement({
                 const displayWidth = placeholder.width * scale;
                 const displayHeight = placeholder.height * scale;
 
+                // Get color based on order
+                const colorStyles = getPlaceholderColor(placeholder.order);
+
                 return (
                   <Rnd
                     key={placeholder.id}
@@ -600,12 +692,22 @@ export default function PDFSignaturePlacement({
                     }}
                     className="pointer-events-auto"
                   >
-                    <div className="relative w-full h-full border-2 border-dashed border-blue-500 bg-blue-100 bg-opacity-50 flex items-center justify-center signature-drag-handle">
-                      <span className="text-xs sm:text-sm font-medium text-blue-700 pointer-events-none">
-                        Signature
-                      </span>
+                    <div
+                      className={`relative w-full h-full border-2 border-dashed flex items-center justify-center signature-drag-handle
+                        ${colorStyles.border} ${colorStyles.bg} bg-opacity-50`}
+                    >
+                      <div className="flex flex-col items-center justify-center">
+                        <span
+                          className={`text-xs sm:text-sm font-medium pointer-events-none ${colorStyles.text}`}
+                        >
+                          {placeholder.recipientName}
+                        </span>
+                        <span className="text-xs text-gray-600 mt-1 pointer-events-none">
+                          Signatory #{placeholder.order}
+                        </span>
+                      </div>
 
-                      {/* Delete button - improved for mobile */}
+                      {/* Delete button */}
                       <div
                         className="absolute -top-3 -right-3 sm:-top-5 sm:-right-5 z-50 touch-manipulation"
                         onTouchEnd={(e) => {
@@ -641,10 +743,21 @@ export default function PDFSignaturePlacement({
       <MobileInstructions />
 
       <div className="mt-4 text-sm hidden md:block">
-        <strong>Instructions:</strong> Drag to position and resize the signature
-        placeholders. Use the zoom controls to see the entire document. Click
-        the red &quot;×&quot; button to remove a placeholder.
+        <strong>Instructions:</strong> Add signature placeholders by selecting
+        recipients. Drag to position and resize the signature placeholders. Use
+        the zoom controls to see the entire document. Click the red
+        &quot;×&quot; button to remove a placeholder.
       </div>
+
+      {/* Recipient Selection Modal */}
+      <RecipientSelectionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        recipients={recipients}
+        onSelectRecipient={handleRecipientSelect}
+        alreadyAssignedIds={getAssignedRecipientIds()}
+        placeholderCount={getPlaceholderCount()}
+      />
     </div>
   );
 }

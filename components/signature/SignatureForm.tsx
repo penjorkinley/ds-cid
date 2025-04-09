@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { uploadDocument, UploadResponse } from "@/services/ds-api";
+import {
+  uploadDocument,
+  UploadResponse,
+  SignaturePlaceholder,
+} from "@/services/ds-api";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import SuccessMessage from "@/components/success/SuccessMessage";
-import MultiStepForm, {
-  SignaturePlaceholder,
-} from "@/components/signature/SignatureStepsForm";
+import MultiStepForm from "@/components/signature/SignatureStepsForm";
 import { Recipient } from "@/components/signature/RecipientStep";
 import EmailStatus from "@/components/success/EmailStatus";
 
@@ -88,17 +90,24 @@ export default function SignatureForm() {
         throw new Error("Please add at least one recipient");
       }
 
-      // Use the first recipient for the initial API call
-      // (You might need to modify the API to handle multiple recipients)
-      const primaryRecipient = formData.recipients[0];
+      // Convert recipients to API format
+      const apiRecipients = formData.recipients.map((recipient) => ({
+        id: recipient.id,
+        name: recipient.name,
+        email: recipient.email,
+        cid: recipient.idValue,
+      }));
 
-      // Convert our new recipient format to what the API expects
+      // Send data to the API using the new structure
       const result = await uploadDocument({
-        name: primaryRecipient.name,
-        email: primaryRecipient.email,
-        cid: primaryRecipient.idValue, // Assuming idValue for CID type corresponds to the cid field
+        recipients: apiRecipients,
         file: formData.file,
-        signaturePlaceholders: formData.signaturePlaceholders,
+        signaturePlaceholders: formData.signaturePlaceholders.map(
+          (placeholder) => ({
+            ...placeholder,
+            recipientId: placeholder.recipientId || formData.recipients[0].id, // Add a default if missing
+          })
+        ),
       });
 
       console.log("Raw API Response:", result);

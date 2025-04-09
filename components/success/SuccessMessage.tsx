@@ -9,8 +9,12 @@ interface SuccessMessageProps {
 
 export default function SuccessMessage({
   response,
+  emailStatus,
   onReset,
 }: SuccessMessageProps) {
+  // Count recipients
+  const recipientCount = response.recipients?.length || 0;
+
   return (
     <div className="flex flex-col items-center text-center">
       {/* Success Icon */}
@@ -25,10 +29,45 @@ export default function SuccessMessage({
       </h2>
 
       <p className="text-gray-600 mb-6 max-w-md">
-        Your document has been successfully sent to{" "}
-        <span className="font-semibold">{response.email}</span>. They will
-        receive an email with a QR code for document access and signature.
+        {recipientCount === 1 ? (
+          <>
+            Your document has been successfully sent to{" "}
+            <span className="font-semibold">
+              {response.recipients[0].email}
+            </span>
+            . They will receive an email with a QR code for document access and
+            signature.
+          </>
+        ) : (
+          <>
+            Your document has been successfully sent to {recipientCount}{" "}
+            recipients. Each recipient will receive an email with a QR code for
+            document access and signature.
+          </>
+        )}
       </p>
+
+      {/* Show recipients list if multiple */}
+      {recipientCount > 1 && (
+        <div className="w-full max-w-md mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h3 className="font-semibold text-gray-700 mb-2">Recipients:</h3>
+          <ul className="text-left text-sm space-y-1">
+            {response.recipients.map((recipient, index) => (
+              <li key={recipient.id} className="flex justify-between">
+                <span>{recipient.name}</span>
+                <span className="text-gray-500">{recipient.email}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Email status */}
+      {emailStatus && (
+        <div className="w-full max-w-md mb-6 p-3 bg-blue-50 border border-blue-100 rounded-md text-blue-700 text-sm">
+          {emailStatus}
+        </div>
+      )}
 
       {/* Subtle divider */}
       <div className="w-16 h-1 bg-green-200 rounded-full mb-6"></div>

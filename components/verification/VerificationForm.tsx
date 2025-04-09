@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import FileUpload from "@/components/ui/FileUpload";
 import Button from "@/components/ui/Button";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import {
@@ -10,6 +9,7 @@ import {
   VerificationApiResponse,
 } from "@/services/verification-api";
 import SignatoryCard from "@/components/verification/SignatoryCard";
+import VerificationDocumentUpload from "@/components/verification/VerificationDocumentUpload";
 
 export default function VerificationForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -22,6 +22,16 @@ export default function VerificationForm() {
     isVerified: boolean;
     message: string;
   } | null>(null);
+
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
+    // Clear any previous results when a new file is selected
+    if (results || documentStatus) {
+      setResults(null);
+      setDocumentStatus(null);
+      setError(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -88,6 +98,13 @@ export default function VerificationForm() {
     }
   };
 
+  const resetForm = () => {
+    setResults(null);
+    setDocumentStatus(null);
+    setSelectedFile(null);
+    setError(null);
+  };
+
   return (
     <div className="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8 border border-gray-200">
       {/* Loading Screen */}
@@ -152,21 +169,13 @@ export default function VerificationForm() {
       {/* Show the form if no verification has been done or the document is not found */}
       {(!results || results.length === 0) && !documentStatus && (
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label
-              htmlFor="documentFile"
-              className="block text-sm font-medium text-gray-700 mb-4"
-            >
-              Upload Document
-            </label>
-            <FileUpload
-              onFileSelect={(file) => setSelectedFile(file)}
-              selectedFile={selectedFile}
-            />
-            <p className="mt-1 text-xs text-gray-500">Supported format: PDF</p>
-          </div>
+          <VerificationDocumentUpload
+            file={selectedFile}
+            onFileChange={handleFileSelect}
+            error={error}
+          />
 
-          <Button type="submit" disabled={!selectedFile}>
+          <Button type="submit" disabled={!selectedFile} className="mt-6">
             {!selectedFile ? "Upload a document to verify" : "Verify Document"}
           </Button>
         </form>
@@ -174,16 +183,8 @@ export default function VerificationForm() {
 
       {/* Always show the "Verify Another Document" button after a verification attempt */}
       {(results || documentStatus) && (
-        <div className="text-center">
-          <Button
-            type="button"
-            onClick={() => {
-              setResults(null);
-              setDocumentStatus(null);
-              setSelectedFile(null);
-              setError(null);
-            }}
-          >
+        <div className="text-center mt-6">
+          <Button type="button" onClick={resetForm}>
             Verify Another Document
           </Button>
         </div>

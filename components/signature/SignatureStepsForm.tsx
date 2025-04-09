@@ -5,16 +5,9 @@ import Button from "@/components/ui/Button";
 import StepIndicator, { Step } from "@/components/ui/StepIndicator";
 import RecipientStep, { Recipient } from "@/components/signature/RecipientStep";
 import DocumentUploadStep from "@/components/signature/DocumentUploadStep";
-import PDFSignaturePlacement from "./PDFSignaturePlacement";
-
-export interface SignaturePlaceholder {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  pageNumber: number;
-}
+import PDFSignaturePlacement, {
+  SignaturePlaceholder,
+} from "@/components/signature/PDFSignaturePlacement";
 
 export interface FormData {
   recipients: Recipient[];
@@ -25,13 +18,6 @@ export interface FormData {
 interface MultiStepFormProps {
   onSubmit: (formData: FormData) => Promise<void>;
 }
-
-// Error alert component for reusability
-const ErrorAlert = ({ message }: { message: string }) => (
-  <div className="p-3 mb-6 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-    {message}
-  </div>
-);
 
 export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -44,9 +30,9 @@ export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const steps: Step[] = [
-    { number: 1, title: "Add Recipient", subtitle: "Add document recipients" },
-    { number: 2, title: "Add Document", subtitle: "Upload your document" },
-    { number: 3, title: "Add Signature", subtitle: "Place signature fields" },
+    { number: 1, title: "Add Recipients", subtitle: "Add document recipients" },
+    { number: 2, title: "Upload Document", subtitle: "Upload your document" },
+    { number: 3, title: "Add Signatures", subtitle: "Place signature fields" },
   ];
 
   // Handle recipient updates
@@ -136,6 +122,20 @@ export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
       return;
     }
 
+    // Verify that each recipient has a signature placeholder
+    const recipientIds = formData.recipients.map((r) => r.id);
+    const placeholderRecipientIds = formData.signaturePlaceholders.map(
+      (p) => p.recipientId
+    );
+    const allRecipientsHavePlaceholder = recipientIds.every((id) =>
+      placeholderRecipientIds.includes(id)
+    );
+
+    if (!allRecipientsHavePlaceholder) {
+      setError("Please add signature placeholders for all recipients");
+      return;
+    }
+
     setError(null);
     setIsSubmitting(true);
 
@@ -146,7 +146,6 @@ export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
       setError(
         err instanceof Error ? err.message : "An unknown error occurred"
       );
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -157,8 +156,18 @@ export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
       return "Add at least one recipient";
     }
 
-    if (currentStep === 3 && formData.signaturePlaceholders.length === 0) {
-      return "Add signature field";
+    if (currentStep === 3) {
+      const notAssignedCount =
+        formData.recipients.length -
+        formData.signaturePlaceholders.filter((p) =>
+          formData.recipients.some((r) => r.id === p.recipientId)
+        ).length;
+
+      if (notAssignedCount > 0) {
+        return `Add ${notAssignedCount} more signature${
+          notAssignedCount > 1 ? "s" : ""
+        }`;
+      }
     }
 
     return currentStep === steps.length ? "Submit" : "Next";
@@ -175,7 +184,11 @@ export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
       />
 
       {/* Error message */}
-      {error && <ErrorAlert message={error} />}
+      {error && (
+        <div className="p-3 mb-6 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Step content */}
       <div className="mb-6">
@@ -199,6 +212,7 @@ export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
             file={formData.file}
             onChange={handleSignaturePlaceholdersChange}
             placeholders={formData.signaturePlaceholders}
+            recipients={formData.recipients}
           />
         )}
       </div>
@@ -208,8 +222,8 @@ export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
         {currentStep > 1 && (
           <Button
             onClick={handleBack}
-            fullWidth={false}
-            className="order-2 sm:order-1 sm:w-1/2"
+            fullWidth={true}
+            className="order-2 sm:order-1 sm:flex-1"
             type="button"
           >
             Back
@@ -219,9 +233,7 @@ export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
         {currentStep < steps.length ? (
           <Button
             onClick={handleNext}
-            className={`order-1 sm:order-2 ${
-              currentStep > 1 ? "sm:w-1/2" : "w-full"
-            }`}
+            className={`order-1 sm:order-2 sm:flex-1`}
             type="button"
             disabled={
               (currentStep === 1 && formData.recipients.length === 0) ||
@@ -234,9 +246,12 @@ export default function SignatureStepsForm({ onSubmit }: MultiStepFormProps) {
           <Button
             onClick={handleSubmit}
             isLoading={isSubmitting}
-            className="order-1 sm:order-2 sm:w-1/2"
+            className="order-1 sm:order-2 sm:flex-1"
             type="button"
-            disabled={formData.signaturePlaceholders.length === 0}
+            disabled={
+              formData.signaturePlaceholders.length === 0 ||
+              formData.signaturePlaceholders.length < formData.recipients.length
+            }
           >
             {getNextButtonText()}
           </Button>
