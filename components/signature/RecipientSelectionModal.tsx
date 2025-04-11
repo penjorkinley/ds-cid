@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import React, { useEffect, useRef } from "react";
 import { Recipient } from "@/components/signature/RecipientStep";
 
