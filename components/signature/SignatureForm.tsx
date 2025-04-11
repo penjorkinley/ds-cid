@@ -11,7 +11,6 @@ import LoadingScreen from "@/components/ui/LoadingScreen";
 import SuccessMessage from "@/components/success/SuccessMessage";
 import MultiStepForm from "@/components/signature/SignatureStepsForm";
 import { Recipient } from "@/components/signature/RecipientStep";
-import EmailStatus from "@/components/success/EmailStatus";
 
 // Interface for our updated multi-recipient form data
 interface MultiRecipientFormData {

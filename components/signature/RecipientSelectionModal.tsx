@@ -22,7 +22,7 @@ export default function RecipientSelectionModal({
 }: RecipientSelectionModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [hasScroll, setHasScroll] = useState(false);
+  const [_hasScroll, setHasScroll] = useState(false);
 
   // Check if content needs scrollbar
   useEffect(() => {

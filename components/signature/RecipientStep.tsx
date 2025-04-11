@@ -189,7 +189,7 @@ export default function RecipientStep({
             htmlFor="name"
             className="block text-sm font-medium text-gray-700 mb-2"
           >
-            Recipient's Name
+            Recipient&apos;s Name
           </label>
           <Input
             id="name"
@@ -209,7 +209,7 @@ export default function RecipientStep({
             htmlFor="email"
             className="block text-sm font-medium text-gray-700 mb-2"
           >
-            Recipient's Email Address
+            Recipient&apos;s Email Address
           </label>
           <Input
             id="email"
@@ -230,7 +230,7 @@ export default function RecipientStep({
             htmlFor="idType"
             className="block text-sm font-medium text-gray-700 mb-2"
           >
-            Recipient's ID Type
+            Recipient&apos;s ID Type
           </label>
           <Select
             id="idType"
@@ -252,7 +252,7 @@ export default function RecipientStep({
               htmlFor="idValue"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Enter Recipient's {currentRecipient.idType}
+              Enter Recipient&apos;s {currentRecipient.idType}
             </label>
             <Input
               id="idValue"
