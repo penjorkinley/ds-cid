@@ -22,27 +22,6 @@ export default function RecipientSelectionModal({
 }: RecipientSelectionModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [_hasScroll, setHasScroll] = useState(false);
-
-  // Check if content needs scrollbar
-  useEffect(() => {
-    if (isOpen && contentRef.current) {
-      const checkForScroll = () => {
-        if (contentRef.current) {
-          setHasScroll(
-            contentRef.current.scrollHeight > contentRef.current.clientHeight
-          );
-        }
-      };
-
-      checkForScroll();
-      window.addEventListener("resize", checkForScroll);
-
-      return () => {
-        window.removeEventListener("resize", checkForScroll);
-      };
-    }
-  }, [isOpen, recipients]);
 
   // Close modal when clicking outside
   useEffect(() => {
