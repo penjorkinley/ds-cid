@@ -9,14 +9,34 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     const { response } = data as { response: UploadResponse };
 
-    if (!response || !response.email) {
+    if (!response || !response.recipients || response.recipients.length === 0) {
       return NextResponse.json(
         { success: false, message: "Invalid request data" },
         { status: 400 }
       );
     }
 
-    const encodedData = encodeResponseData(response);
+    // Get the current recipient to send the email to
+    // If currentRecipient is provided, use it; otherwise, use the first recipient by order
+    const orderedRecipients = [...response.recipients].sort(
+      (a, b) => (a.order || 0) - (b.order || 0)
+    );
+
+    const currentRecipient = response.currentRecipient || orderedRecipients[0];
+
+    if (!currentRecipient || !currentRecipient.email) {
+      return NextResponse.json(
+        { success: false, message: "No valid recipient found" },
+        { status: 400 }
+      );
+    }
+
+    // Create recipient-specific encoded data
+    const encodedData = encodeResponseData({
+      ...response,
+      currentRecipientId: currentRecipient.id,
+    });
+
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const qrCodeBuffer = await generateQRCode(encodedData, baseUrl);
 
@@ -32,9 +52,12 @@ export async function POST(req: NextRequest) {
 
     await transporter.verify();
 
+    // Get recipient order for display, defaulting to 1 if undefined
+    const recipientOrder = currentRecipient.order || 1;
+
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.SMTP_USER,
-      to: response.email,
+      to: currentRecipient.email,
       subject: "Your Document for Digital Signature",
       html: `
         <!DOCTYPE html>
@@ -61,11 +84,14 @@ export async function POST(req: NextRequest) {
               <h2>Bhutan NDI Digital Signature Portal</h2>
             </div>
             
-            <p>Hello ${response.name},</p>
+            <p>Hello ${currentRecipient.name},</p>
             
             <p>A document has been shared with you for digital signature. Please scan the QR code below to view the document and apply your digital signature.</p>
             
-            
+             <!-- Add signing order information -->
+            <p style="text-align: center; font-weight: bold; color: #333;">
+              You are signatory #${recipientOrder} of ${response.recipients.length}
+            </p>
             
             <div class="credential-box">
               <p style="text-align: center; color: #555; font-weight: 500;">

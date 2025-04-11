@@ -80,7 +80,8 @@ export default function RecipientSelectionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600/50 backdrop-blur-[2px]">
+      {" "}
       <div
         ref={modalRef}
         className="relative bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] flex flex-col"

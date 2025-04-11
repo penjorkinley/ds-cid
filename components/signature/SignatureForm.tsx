@@ -25,49 +25,46 @@ export default function SignatureForm() {
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const sendEmailWithQRCode = async (
-    response: UploadResponse,
-    recipients: Recipient[]
-  ) => {
+  const sendEmailWithQRCode = async (response: UploadResponse) => {
     try {
-      setEmailStatus("Sending emails with QR codes...");
+      // Find the first recipient by order
+      const orderedRecipients = [...response.recipients].sort(
+        (a, b) => (a.order || 0) - (b.order || 0)
+      );
+      const firstRecipient = orderedRecipients[0];
 
-      // Create an array of promises for sending emails to all recipients
-      const emailPromises = recipients.map(async (recipient) => {
-        const recipientResponse = {
-          ...response,
-          email: recipient.email,
-          name: recipient.name,
-        };
+      if (!firstRecipient) {
+        throw new Error("No recipients found in the response");
+      }
 
-        const emailResponse = await fetch("/api/send-email", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ response: recipientResponse }),
-        });
+      setEmailStatus(
+        `Sending email to first signatory (${firstRecipient.name})...`
+      );
 
-        if (!emailResponse.ok) {
-          const errorData = await emailResponse.json();
-          throw new Error(
-            errorData.message || `Server error: ${emailResponse.status}`
-          );
-        }
+      // Create a recipient-specific response object
+      const recipientResponse = {
+        ...response,
+        currentRecipient: firstRecipient, // Add the current recipient to the response
+      };
 
-        return recipient.email;
+      const emailResponse = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ response: recipientResponse }),
       });
 
-      // Wait for all emails to be sent
-      const sentEmails = await Promise.all(emailPromises);
-
-      if (sentEmails.length === 1) {
-        setEmailStatus(`Email sent successfully to ${sentEmails[0]}`);
-      } else {
-        setEmailStatus(
-          `Emails sent successfully to ${sentEmails.length} recipients`
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.json();
+        throw new Error(
+          errorData.message || `Server error: ${emailResponse.status}`
         );
       }
+
+      setEmailStatus(
+        `Email sent successfully to ${firstRecipient.name} (${firstRecipient.email})`
+      );
     } catch (err) {
       console.error("Error sending email:", err);
       setEmailStatus(
@@ -91,11 +88,12 @@ export default function SignatureForm() {
       }
 
       // Convert recipients to API format
-      const apiRecipients = formData.recipients.map((recipient) => ({
+      const apiRecipients = formData.recipients.map((recipient, index) => ({
         id: recipient.id,
         name: recipient.name,
         email: recipient.email,
         cid: recipient.idValue,
+        order: index + 1,
       }));
 
       // Send data to the API using the new structure
@@ -114,7 +112,7 @@ export default function SignatureForm() {
       setResponse(result);
 
       // Send email with QR code to all recipients
-      await sendEmailWithQRCode(result, formData.recipients);
+      await sendEmailWithQRCode(result);
     } catch (err) {
       console.error("Error submitting form:", err);
       throw err;
@@ -145,9 +143,6 @@ export default function SignatureForm() {
           Bhutan NDI Digital Signature Portal
         </h1>
       </div>
-
-      {/* Email status notification */}
-      {emailStatus && <EmailStatus status={emailStatus} />}
 
       {response ? (
         <div className="py-4 sm:py-6 md:py-8 bg-white">

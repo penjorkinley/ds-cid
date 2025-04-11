@@ -14,6 +14,8 @@ export interface Recipient {
   name: string;
   email: string;
   cid: string;
+  order: number;
+  recipientId?: string;
 }
 
 export interface UploadResponse {
@@ -25,6 +27,7 @@ export interface UploadResponse {
   message: string;
   signaturePlaceholders?: SignaturePlaceholder[];
   signatureCoordinates?: string;
+  currentRecipient?: Recipient;
 }
 
 export interface UploadDocumentParams {
