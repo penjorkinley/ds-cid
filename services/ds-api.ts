@@ -16,6 +16,7 @@ export interface Recipient {
   cid: string;
   order: number;
   recipientId?: string;
+  signatureCoordinates?: SignaturePlaceholder;
 }
 
 export interface UploadResponse {
@@ -23,7 +24,7 @@ export interface UploadResponse {
   documentHash: string;
   documentViewUrl: string;
   recipients: Recipient[]; // Changed to array of recipients
-  organizationId?: string;
+  orgId?: string;
   message: string;
   signaturePlaceholders?: SignaturePlaceholder[];
   signatureCoordinates?: string;
