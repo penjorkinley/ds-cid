@@ -107,7 +107,7 @@ export default function SignatureForm() {
         ),
       });
 
-      console.log("Raw API Response:", result);
+      // console.log("Raw API Response:", result);
       setResponse(result);
 
       // Send email with QR code to all recipients
