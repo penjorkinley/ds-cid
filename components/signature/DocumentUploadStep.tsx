@@ -80,39 +80,27 @@ export default function DocumentUploadStep({
 }: DocumentUploadStepProps) {
   return (
     <div className="space-y-6">
-      <div>
-        <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-200 transition-all hover:border-[#5AC893]/50">
-          <div className="text-center space-y-4">
-            <div className="flex justify-center">
-              <DocumentIcon />
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">
-                Upload Document
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Drag and drop your document here, or click to browse
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
-                Supported formats: PDF
-              </p>
-            </div>
-
-            <div className="mt-6">
-              <FileUpload onFileSelect={onFileChange} selectedFile={file} />
-            </div>
-
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-
-            {file && <SuccessMessage>Document ready for upload</SuccessMessage>}
-          </div>
-        </div>
-      </div>
-
       <InfoMessage>
         Documents will be securely processed and encrypted. Only authorized
         recipients will be able to view and sign them.
       </InfoMessage>
+
+      <div>
+        <div className="text-center space-y-4">
+          <div className="mt-2">
+            <FileUpload
+              onFileSelect={onFileChange}
+              selectedFile={file}
+              acceptedFileTypes=".pdf"
+              showFileTypeInfo={true}
+            />
+          </div>
+
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+          {file && <SuccessMessage>Document ready for upload</SuccessMessage>}
+        </div>
+      </div>
     </div>
   );
 }

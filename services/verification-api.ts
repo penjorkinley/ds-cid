@@ -1,10 +1,19 @@
-export interface VerificationApiResponse {
+// services/verification-api.ts
+export interface Signatory {
   name: string;
   email: string;
-  cid: string;
-  signature: string | null;
-  signedAt: string | null;
-  message: string;
+  signedAt: string;
+  validSignature: boolean;
+  cid?: string;
+}
+
+export interface DocumentVerificationResponse {
+  documentId: string;
+  validSignature: boolean;
+  initialHash: string;
+  finalHash: string;
+  signatories: Signatory[];
+  message?: string;
 }
 
 interface ErrorResponse {
@@ -13,7 +22,7 @@ interface ErrorResponse {
 
 export const verifyDocument = async (
   formData: FormData
-): Promise<VerificationApiResponse | VerificationApiResponse[]> => {
+): Promise<DocumentVerificationResponse | null> => {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/documents/check-signature`,
@@ -28,23 +37,23 @@ export const verifyDocument = async (
     // Check if response is an error object with the format {error: string}
     if (!response.ok || (data && "error" in data)) {
       return {
-        name: "",
-        email: "",
-        cid: "",
-        signature: null,
-        signedAt: null,
+        documentId: "",
+        validSignature: false,
+        initialHash: "",
+        finalHash: "",
+        signatories: [],
         message: (data as ErrorResponse).error || "Verification failed",
       };
     }
 
-    return data;
+    return data as DocumentVerificationResponse;
   } catch (error) {
     return {
-      name: "",
-      email: "",
-      cid: "",
-      signature: null,
-      signedAt: null,
+      documentId: "",
+      validSignature: false,
+      initialHash: "",
+      finalHash: "",
+      signatories: [],
       message: error instanceof Error ? error.message : "Verification failed",
     };
   }

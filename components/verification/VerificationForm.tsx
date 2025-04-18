@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import {
   verifyDocument,
-  VerificationApiResponse,
+  DocumentVerificationResponse,
 } from "@/services/verification-api";
 import SignatoryCard from "@/components/verification/SignatoryCard";
 import VerificationDocumentUpload from "@/components/verification/VerificationDocumentUpload";
@@ -15,20 +15,14 @@ export default function VerificationForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<VerificationApiResponse[] | null>(
-    null
-  );
-  const [documentStatus, setDocumentStatus] = useState<{
-    isVerified: boolean;
-    message: string;
-  } | null>(null);
+  const [verificationResult, setVerificationResult] =
+    useState<DocumentVerificationResponse | null>(null);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
     // Clear any previous results when a new file is selected
-    if (results || documentStatus) {
-      setResults(null);
-      setDocumentStatus(null);
+    if (verificationResult) {
+      setVerificationResult(null);
       setError(null);
     }
   };
@@ -37,8 +31,7 @@ export default function VerificationForm() {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-    setResults(null);
-    setDocumentStatus(null);
+    setVerificationResult(null);
 
     try {
       if (!selectedFile) {
@@ -52,43 +45,16 @@ export default function VerificationForm() {
       // Call the service function to upload the file
       const apiResponse = await verifyDocument(formData);
 
-      // Check if the response is an array (multiple signatories)
-      if (Array.isArray(apiResponse)) {
-        // Set the results
-        setResults(apiResponse);
+      if (!apiResponse) {
+        throw new Error("No response received from the server");
+      }
 
-        // Determine overall document status
-        const hasSignedDocument = apiResponse.some(
-          (response) => !!response.signature && !!response.signedAt
-        );
-
-        setDocumentStatus({
-          isVerified: hasSignedDocument,
-          message: hasSignedDocument
-            ? "✓ Document has at least one valid signature"
-            : "✗ Document has no valid signatures",
-        });
-      } else if (apiResponse && typeof apiResponse === "object") {
-        // For single object response
-
-        // Check for the document not found error
-        if (apiResponse.message === "Document not found") {
-          setDocumentStatus({
-            isVerified: false,
-            message: "Document not found in the system",
-          });
-
-          // Don't set results for not found documents
-        } else {
-          setResults([apiResponse]); // Convert to array for consistent handling
-
-          setDocumentStatus({
-            isVerified: !!apiResponse.signature && !!apiResponse.signedAt,
-            message: apiResponse.message || "Document verification completed",
-          });
-        }
+      if (apiResponse.message) {
+        // There was an error or a specific message from the API
+        setError(apiResponse.message);
       } else {
-        throw new Error("Unexpected response format from the server");
+        // Success - store the verification result
+        setVerificationResult(apiResponse);
       }
     } catch (err) {
       console.error("Verification error:", err);
@@ -99,11 +65,15 @@ export default function VerificationForm() {
   };
 
   const resetForm = () => {
-    setResults(null);
-    setDocumentStatus(null);
+    setVerificationResult(null);
     setSelectedFile(null);
     setError(null);
   };
+
+  // Calculate valid signatures count
+  const validSignatures =
+    verificationResult?.signatories.filter((s) => s.validSignature).length || 0;
+  const totalSignatures = verificationResult?.signatories.length || 0;
 
   return (
     <div className="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8 border border-gray-200">
@@ -137,37 +107,40 @@ export default function VerificationForm() {
         </div>
       )}
 
-      {documentStatus && (
+      {/* Document Status Banner */}
+      {verificationResult && (
         <div
           className={`p-3 sm:p-4 mb-6 rounded-md border ${
-            documentStatus.isVerified
+            verificationResult.validSignature
               ? "bg-green-50 border-green-200 text-green-800"
               : "bg-yellow-50 border-yellow-200 text-yellow-800"
           } text-center font-medium text-sm sm:text-base`}
         >
-          {documentStatus.message}
+          {verificationResult.validSignature
+            ? `✓ Document verified with ${validSignatures} valid signature${
+                validSignatures !== 1 ? "s" : ""
+              }`
+            : `⚠️ Document verification incomplete (${validSignatures} of ${totalSignatures} valid signatures)`}
         </div>
       )}
 
-      {results && results.length > 0 && (
+      {verificationResult && verificationResult.signatories.length > 0 && (
         <div className="mb-6 sm:mb-8">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">Signatories</h2>
           <div className="space-y-4">
-            {results.map((signatory, index) =>
-              signatory.name && signatory.email ? (
-                <SignatoryCard
-                  key={`${signatory.email}-${index}`}
-                  signatory={signatory}
-                  index={index}
-                />
-              ) : null
-            )}
+            {verificationResult.signatories.map((signatory, index) => (
+              <SignatoryCard
+                key={`${signatory.email}-${index}`}
+                signatory={signatory}
+                index={index}
+              />
+            ))}
           </div>
         </div>
       )}
 
-      {/* Show the form if no verification has been done or the document is not found */}
-      {(!results || results.length === 0) && !documentStatus && (
+      {/* Show the form if no verification has been done */}
+      {!verificationResult && (
         <form onSubmit={handleSubmit} className="space-y-6">
           <VerificationDocumentUpload
             file={selectedFile}
@@ -181,8 +154,8 @@ export default function VerificationForm() {
         </form>
       )}
 
-      {/* Always show the "Verify Another Document" button after a verification attempt */}
-      {(results || documentStatus) && (
+      {/* Show the "Verify Another Document" button after a verification attempt */}
+      {verificationResult && (
         <div className="text-center mt-6">
           <Button type="button" onClick={resetForm}>
             Verify Another Document

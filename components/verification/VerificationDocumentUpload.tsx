@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import FileUpload from "@/components/ui/FileUpload";
 
 interface VerificationDocumentUploadProps {
@@ -9,26 +9,8 @@ interface VerificationDocumentUploadProps {
   error?: string | null;
 }
 
-// Document icon component for reusability
-const DocumentIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-16 w-16 text-gray-400"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={1.5}
-      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-    />
-  </svg>
-);
-
 // Success message component for reusability
-const SuccessMessage = ({ children }: { children: React.ReactNode }) => (
+const SuccessMessage = () => (
   <div className="p-3 bg-green-50 rounded-md border border-green-100">
     <div className="flex items-center">
       <svg
@@ -43,7 +25,9 @@ const SuccessMessage = ({ children }: { children: React.ReactNode }) => (
           clipRule="evenodd"
         />
       </svg>
-      <span className="text-sm text-green-700">{children}</span>
+      <span className="text-sm text-green-700">
+        Document ready for verification
+      </span>
     </div>
   </div>
 );
@@ -81,40 +65,47 @@ export default function VerificationDocumentUpload({
   onFileChange,
   error,
 }: VerificationDocumentUploadProps) {
+  // Track file-specific error separate from global form error
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  const handleFileSelect = (newFile: File) => {
+    // Clear any file-specific errors when a new file is selected
+    setFileError(null);
+
+    // Check if file is PDF
+    if (newFile && !newFile.name.toLowerCase().endsWith(".pdf")) {
+      setFileError("Only PDF files are supported");
+      return;
+    }
+
+    onFileChange(newFile);
+  };
+
   return (
     <div className="space-y-6">
+      <VerificationInfoMessage />
       <div>
-        <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-200 transition-all hover:border-[#5AC893]/50">
+        <div className="bg-white">
           <div className="text-center space-y-4">
-            <div className="flex justify-center">
-              <DocumentIcon />
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">
-                Verify Document
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Drag and drop your document here, or click to browse
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
-                Supported format: PDF
-              </p>
+            {/* Use the improved FileUpload component */}
+            <div className="mt-4">
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                selectedFile={file}
+                acceptedFileTypes=".pdf"
+              />
             </div>
 
-            <div className="mt-6">
-              <FileUpload onFileSelect={onFileChange} selectedFile={file} />
-            </div>
-
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-
-            {file && (
-              <SuccessMessage>Document ready for verification</SuccessMessage>
+            {/* Show file-specific error */}
+            {fileError && (
+              <p className="mt-2 text-sm text-red-600">{fileError}</p>
             )}
+
+            {/* Show success message only when we have a file and no errors */}
+            {file && !fileError && !error && <SuccessMessage />}
           </div>
         </div>
       </div>
-
-      <VerificationInfoMessage />
     </div>
   );
 }

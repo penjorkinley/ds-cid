@@ -1,32 +1,85 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
+  acceptedFileTypes?: string;
+  showFileTypeInfo?: boolean;
 }
 
 export default function FileUpload({
   onFileSelect,
   selectedFile,
+  acceptedFileTypes = ".pdf",
+  showFileTypeInfo = true,
 }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropAreaRef = useRef<HTMLDivElement>(null);
   const [dragActive, setDragActive] = useState<boolean>(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  // Setup global drag and drop listeners to improve reliability
+  useEffect(() => {
+    const preventDefaults = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    // Add listeners to the entire document
+    window.addEventListener("dragenter", preventDefaults, false);
+    window.addEventListener("dragover", preventDefaults, false);
+    window.addEventListener("dragleave", preventDefaults, false);
+    window.addEventListener("drop", preventDefaults, false);
+
+    return () => {
+      window.removeEventListener("dragenter", preventDefaults, false);
+      window.removeEventListener("dragover", preventDefaults, false);
+      window.removeEventListener("dragleave", preventDefaults, false);
+      window.removeEventListener("drop", preventDefaults, false);
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files[0]) {
-      onFileSelect(files[0]);
+      validateAndSelectFile(files[0]);
     }
   };
 
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+  const validateAndSelectFile = (file: File) => {
+    setFileError(null);
+    // Check if the file is a PDF
+    if (
+      acceptedFileTypes === ".pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      setFileError("Only PDF files are supported");
+      return;
+    }
+    onFileSelect(file);
+  };
+
+  // Improved drag handlers
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
+    setDragActive(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Always set to true on dragover to ensure the highlight stays active
+    if (!dragActive) setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Check if we're leaving the drop area, not just moving between children
+    if (e.currentTarget === e.target) {
       setDragActive(false);
     }
   };
@@ -36,8 +89,8 @@ export default function FileUpload({
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileSelect(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      validateAndSelectFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -48,17 +101,18 @@ export default function FileUpload({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       <div
-        className={`w-full h-16 flex items-center justify-center border-2 border-dashed rounded-md cursor-pointer transition-colors ${
+        ref={dropAreaRef}
+        className={`w-full h-28 sm:h-36 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
           dragActive
             ? "border-[#5AC893] bg-[#5AC893]/10"
             : "border-gray-300 hover:border-[#5AC893]"
         }`}
         onClick={handleClick}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         <input
@@ -66,11 +120,29 @@ export default function FileUpload({
           type="file"
           className="hidden"
           onChange={handleFileChange}
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+          accept={acceptedFileTypes}
         />
-        <p className="text-gray-600 flex items-center">
+
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`h-8 w-8 mb-2 ${
+            dragActive ? "text-[#5AC893]" : "text-gray-400"
+          }`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+          />
+        </svg>
+
+        <p className="text-gray-600 text-center">
           {selectedFile ? (
-            <>
+            <span className="flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 mr-2 text-[#5AC893]"
@@ -83,29 +155,26 @@ export default function FileUpload({
                   clipRule="evenodd"
                 />
               </svg>
-              {selectedFile.name}
-            </>
+              <span className="truncate max-w-xs">{selectedFile.name}</span>
+            </span>
           ) : (
             <>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-              Upload file
+              <span className="font-medium block">
+                Drag and drop your file here
+              </span>
+              <span className="text-sm text-gray-500 block mt-1">
+                or click to browse
+              </span>
+              {showFileTypeInfo && (
+                <span className="text-xs text-blue-600 font-medium block mt-1">
+                  Only PDF files supported
+                </span>
+              )}
             </>
           )}
         </p>
       </div>
+
       {selectedFile && (
         <div className="text-base text-gray-500 flex justify-between items-center px-1">
           <span>Size: {formatFileSize(selectedFile.size)}</span>
@@ -118,11 +187,15 @@ export default function FileUpload({
                 fileInputRef.current.value = "";
               }
             }}
-            className="text-red-500 hover:text-red-700 cursor-pointer"
+            className="text-red-500 hover:text-red-700"
           >
             Remove
           </button>
         </div>
+      )}
+
+      {fileError && (
+        <div className="text-sm text-red-600 px-1">{fileError}</div>
       )}
     </div>
   );

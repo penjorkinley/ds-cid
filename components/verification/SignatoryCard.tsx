@@ -1,7 +1,7 @@
-import { VerificationApiResponse } from "@/services/verification-api";
+import { Signatory } from "@/services/verification-api";
 
 interface SignatoryCardProps {
-  signatory: VerificationApiResponse;
+  signatory: Signatory;
   index: number;
 }
 
@@ -9,8 +9,6 @@ export default function SignatoryCard({
   signatory,
   index,
 }: SignatoryCardProps) {
-  const isSigned = !!signatory.signature && !!signatory.signedAt;
-
   return (
     <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
       <div className="p-3 sm:p-4 border-b">
@@ -20,12 +18,12 @@ export default function SignatoryCard({
           </h3>
           <div
             className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full whitespace-nowrap ${
-              isSigned
+              signatory.validSignature
                 ? "bg-green-100 text-green-800"
                 : "bg-yellow-100 text-yellow-800"
             }`}
           >
-            {isSigned ? "Signed" : "Not Signed"}
+            {signatory.validSignature ? "Valid Signature" : "Invalid Signature"}
           </div>
         </div>
       </div>
@@ -50,26 +48,17 @@ export default function SignatoryCard({
             </p>
           </div>
 
-          <div className="col-span-1 sm:col-span-2">
-            <h4 className="text-xs sm:text-sm font-medium text-gray-500">
-              Status
-            </h4>
-            <p className="mt-0.5 sm:mt-1 text-sm sm:text-base text-gray-900">
-              {signatory.message}
-            </p>
-          </div>
+          {signatory.signedAt && (
+            <div className="col-span-1 sm:col-span-2">
+              <h4 className="text-xs sm:text-sm font-medium text-gray-500">
+                Signed At
+              </h4>
+              <p className="mt-0.5 sm:mt-1 text-sm sm:text-base text-gray-900">
+                {new Date(signatory.signedAt).toLocaleString()}
+              </p>
+            </div>
+          )}
         </div>
-
-        {isSigned && (
-          <div>
-            <h4 className="text-xs sm:text-sm font-medium text-gray-500">
-              Signed At
-            </h4>
-            <p className="mt-0.5 sm:mt-1 text-sm sm:text-base text-gray-900">
-              {new Date(signatory.signedAt!).toLocaleString()}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
