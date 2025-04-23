@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { SavedRecipient, useSavedRecipients } from "./SavedRecipientsContext";
 import { Recipient } from "@/components/signature/RecipientStep";
 import DeleteContactConfirmation from "./DeleteContactConfirmation";
-import AlertModal from "@/components/ui/AlertModal"; // Import AlertModal
+import AlertModal from "@/components/ui/AlertModal";
 
 interface SavedContactsPanelProps {
   onSelectContact: (contact: SavedRecipient) => void;
@@ -107,9 +107,9 @@ export default function SavedContactsPanel({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 flex flex-col h-full">
-      {/* Header with title */}
-      <div className="flex justify-between items-center p-4 border-b border-gray-200">
+    <div className="bg-white rounded-lg shadow-md border border-gray-200 flex flex-col h-full max-h-[calc(100vh-120px)]">
+      {/* Header with title - keep this outside the scrollable area */}
+      <div className="flex justify-between items-center p-4 border-b border-gray-200 flex-shrink-0">
         <h3 className="text-base font-medium text-gray-700">Saved Contacts</h3>
         <div className="text-sm text-gray-500">
           {savedRecipients.length}{" "}
@@ -118,7 +118,7 @@ export default function SavedContactsPanel({
       </div>
 
       {/* Search input with improved placeholder */}
-      <div className="px-4 pt-4 pb-2">
+      <div className="px-4 pt-4 pb-2 flex-shrink-0">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg
@@ -168,7 +168,7 @@ export default function SavedContactsPanel({
       </div>
 
       {/* Contacts list container - now fully scrollable */}
-      <div className="flex-grow p-4 overflow-hidden">
+      <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
         {savedRecipients.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
             <svg
@@ -209,66 +209,62 @@ export default function SavedContactsPanel({
                 return (
                   <div
                     key={recipient.id}
-                    onClick={() => handleContactSelect(recipient)}
-                    className={`border border-gray-200 rounded-lg p-3 
-                      ${
-                        isAlreadyAdded
-                          ? "bg-gray-100 border-gray-300"
-                          : "hover:border-[#5AC893] hover:shadow-sm"
-                      } 
-                      transition-all cursor-pointer relative`}
+                    onClick={() =>
+                      !isAlreadyAdded && handleContactSelect(recipient)
+                    }
+                    className={`rounded-lg border p-4 transition relative ${
+                      isAlreadyAdded
+                        ? "border-green-200 bg-green-50 cursor-default"
+                        : "border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
+                    }`}
                   >
-                    <div className="flex justify-between items-start">
-                      <div className="w-full pr-8">
-                        <h4 className="font-medium text-gray-900 truncate">
-                          {recipient.name}
-                        </h4>
-                        <p className="text-sm text-gray-600 truncate">
-                          {recipient.email}
-                        </p>
-                        <div className="mt-1 text-xs text-gray-500 flex items-center">
-                          <span className="truncate">
-                            {recipient.idType}: {recipient.idValue}
-                          </span>
-                        </div>
-
-                        {/* Small last updated date */}
-                        <div className="mt-1 text-xs text-gray-400">
-                          Updated: {lastUpdateDate}
-                        </div>
-
-                        {/* Show badge if already added */}
-                        {isAlreadyAdded && (
-                          <div className="mt-1">
-                            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                              Already added
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Trash icon for deletion */}
-                      <button
-                        onClick={(e) => handleDeleteContact(recipient, e)}
-                        className="text-gray-400 hover:text-red-500 p-1 absolute right-2 top-2"
-                        aria-label="Remove contact"
+                    {/* Delete button at top right */}
+                    <button
+                      onClick={(e) => handleDeleteContact(recipient, e)}
+                      className="absolute right-2 top-2 text-gray-400 hover:text-red-500 p-1"
+                      aria-label="Remove contact"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+
+                    <div className="flex flex-col">
+                      <h4 className="font-medium text-gray-900 truncate pr-6">
+                        {recipient.name}
+                      </h4>
+                      <p className="text-sm text-gray-600 truncate">
+                        {recipient.email}
+                      </p>
+                      <div className="mt-1 text-xs text-gray-500">
+                        <span>
+                          {recipient.idType}: {recipient.idValue}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-400">
+                        Updated: {lastUpdateDate}
+                      </div>
                     </div>
+
+                    {/* "Already added" badge positioned at bottom right */}
+                    {isAlreadyAdded && (
+                      <div className="absolute bottom-2 right-2">
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                          Already added
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}

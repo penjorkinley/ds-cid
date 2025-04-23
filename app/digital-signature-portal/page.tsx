@@ -44,7 +44,7 @@ export default function DigitalSignaturePage() {
           </div>
 
           {/* Right column - Saved Contacts Panel */}
-          <div className="w-full md:w-80 lg:w-96">
+          <div className="w-full md:w-80 lg:w-96 flex flex-col">
             <SavedContactsPanel
               onSelectContact={handleContactSelect}
               currentRecipients={currentRecipients}
