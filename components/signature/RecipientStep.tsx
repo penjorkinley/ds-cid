@@ -6,6 +6,8 @@ import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import RecipientChip from "@/components/ui/RecipientChip";
 import { validateRecipient } from "@/utils/validation-schemas";
+import SaveRecipientConfirmation from "@/components/saved-recipients/SaveRecipientConfirmation";
+import { useSavedRecipients } from "@/components/saved-recipients/SavedRecipientsContext";
 
 export interface Recipient {
   id: string;
@@ -13,6 +15,7 @@ export interface Recipient {
   email: string;
   idType: string;
   idValue: string;
+  savedContactId?: string; // Track which saved contact this recipient came from
 }
 
 interface RecipientStepProps {
@@ -24,6 +27,7 @@ export default function RecipientStep({
   recipients,
   onRecipientsChange,
 }: RecipientStepProps) {
+  const { addSavedRecipient, savedRecipients } = useSavedRecipients();
   const [currentRecipient, setCurrentRecipient] = useState<
     Omit<Recipient, "id">
   >({
@@ -36,6 +40,20 @@ export default function RecipientStep({
   const [editingRecipientId, setEditingRecipientId] = useState<string | null>(
     null
   );
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [recipientToSave, setRecipientToSave] = useState<Omit<
+    Recipient,
+    "id"
+  > | null>(null);
+  // State for update confirmation
+  const [showUpdateConfirmation, setShowUpdateConfirmation] = useState(false);
+  const [recipientToUpdate, setRecipientToUpdate] = useState<Recipient | null>(
+    null
+  );
+  // State to store the updated recipients list during the update process
+  const [updatedRecipientsList, setUpdatedRecipientsList] = useState<
+    Recipient[] | null
+  >(null);
 
   // Clear form or populate it with recipient data for editing
   const resetForm = (recipient?: Recipient) => {
@@ -45,6 +63,7 @@ export default function RecipientStep({
         email: recipient.email,
         idType: recipient.idType,
         idValue: recipient.idValue,
+        savedContactId: recipient.savedContactId,
       });
       setEditingRecipientId(recipient.id);
     } else {
@@ -79,7 +98,7 @@ export default function RecipientStep({
     }
   };
 
-  // Check for duplicate recipients
+  // Check for duplicate recipients in the current form
   const isDuplicate = () => {
     return recipients.some(
       (recipient) =>
@@ -88,6 +107,16 @@ export default function RecipientStep({
           recipient.idValue === currentRecipient.idValue) &&
         recipient.id !== editingRecipientId
     );
+  };
+
+  // Check if the recipient is already in saved contacts and return the ID if found
+  const getSavedContactId = () => {
+    const savedContact = savedRecipients.find(
+      (contact) =>
+        contact.email.toLowerCase() === currentRecipient.email.toLowerCase() ||
+        contact.idValue === currentRecipient.idValue
+    );
+    return savedContact?.id;
   };
 
   // Add or update recipient
@@ -107,23 +136,134 @@ export default function RecipientStep({
     }
 
     if (editingRecipientId) {
-      // Update existing recipient
-      const updatedRecipients = recipients.map((recipient) =>
-        recipient.id === editingRecipientId
-          ? { ...currentRecipient, id: editingRecipientId }
-          : recipient
+      // Find the recipient being edited
+      const existingRecipient = recipients.find(
+        (r) => r.id === editingRecipientId
       );
+
+      if (!existingRecipient) {
+        return;
+      }
+
+      // Create updated recipient with the same ID
+      const updatedRecipient: Recipient = {
+        ...currentRecipient,
+        id: editingRecipientId,
+        savedContactId: existingRecipient.savedContactId,
+      };
+
+      // Update the recipients list
+      const updatedRecipients = recipients.map((recipient) =>
+        recipient.id === editingRecipientId ? updatedRecipient : recipient
+      );
+
+      // Check if this recipient was originally from saved contacts
+      if (updatedRecipient.savedContactId) {
+        // Check if we've made changes that might need syncing to contacts
+        const originalContact = savedRecipients.find(
+          (c) => c.id === updatedRecipient.savedContactId
+        );
+
+        if (originalContact) {
+          // Check each field individually
+          const nameChanged = originalContact.name !== updatedRecipient.name;
+          const emailChanged = originalContact.email !== updatedRecipient.email;
+          const idTypeChanged =
+            originalContact.idType !== updatedRecipient.idType;
+          const idValueChanged =
+            originalContact.idValue !== updatedRecipient.idValue;
+
+          if (nameChanged || emailChanged || idTypeChanged || idValueChanged) {
+            // Store the updated recipients list temporarily
+            setUpdatedRecipientsList(updatedRecipients);
+
+            // Show confirmation dialog for updating saved contact
+            setRecipientToUpdate(updatedRecipient);
+            setShowUpdateConfirmation(true);
+
+            // No need to apply form changes yet or reset the form
+            // We'll do that after the user decides whether to update the saved contact
+            return;
+          }
+        }
+      }
+
+      // If no saved contact to update, just update the form recipients
       onRecipientsChange(updatedRecipients);
     } else {
       // Add new recipient
       const newRecipient: Recipient = {
         ...currentRecipient,
-        id: Date.now().toString(), // Simple ID generation
+        id: `recipient-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 9)}`,
       };
+
+      // Check if this matches an existing contact
+      const existingContactId = getSavedContactId();
+      if (existingContactId) {
+        // Link to the existing contact
+        newRecipient.savedContactId = existingContactId;
+      }
+
       onRecipientsChange([...recipients, newRecipient]);
+
+      // Only show save confirmation if not already in saved contacts
+      if (!existingContactId) {
+        setRecipientToSave({
+          name: newRecipient.name,
+          email: newRecipient.email,
+          idType: newRecipient.idType,
+          idValue: newRecipient.idValue,
+        });
+        setShowSaveConfirmation(true);
+      }
     }
 
     // Reset the form after adding/updating
+    resetForm();
+  };
+
+  // Update saved contact with current recipient data and finalize the form update
+  const handleUpdateSavedContact = () => {
+    if (recipientToUpdate && recipientToUpdate.savedContactId) {
+      // Update the saved contact
+      addSavedRecipient({
+        name: recipientToUpdate.name,
+        email: recipientToUpdate.email,
+        idType: recipientToUpdate.idType,
+        idValue: recipientToUpdate.idValue,
+        id: recipientToUpdate.savedContactId,
+      });
+
+      // If we have a stored updated recipients list, apply it now
+      if (updatedRecipientsList) {
+        onRecipientsChange(updatedRecipientsList);
+        setUpdatedRecipientsList(null);
+      }
+    }
+
+    // Close the modal
+    setShowUpdateConfirmation(false);
+    setRecipientToUpdate(null);
+
+    // Make sure the form is reset (in case it wasn't already)
+    resetForm();
+  };
+
+  // Handle declining to update the saved contact
+  const handleDeclineUpdate = () => {
+    // Still proceed with the form update even if they don't want to update the contact
+    if (updatedRecipientsList) {
+      onRecipientsChange(updatedRecipientsList);
+      setUpdatedRecipientsList(null);
+    }
+
+    // Close the modal
+    setShowUpdateConfirmation(false);
+    setRecipientToUpdate(null);
+
+    // Reset the form
     resetForm();
   };
 
@@ -143,6 +283,39 @@ export default function RecipientStep({
     if (recipient) {
       resetForm(recipient);
     }
+  };
+
+  // Confirm saving a recipient
+  const handleConfirmSave = () => {
+    if (recipientToSave) {
+      // Generate a unique ID for the saved contact
+      const savedContactId = `saved-${Date.now()}`;
+
+      // Add to saved contacts
+      addSavedRecipient({
+        name: recipientToSave.name,
+        email: recipientToSave.email,
+        idType: recipientToSave.idType,
+        idValue: recipientToSave.idValue,
+      });
+
+      // Update the recently added recipient to link it to the saved contact
+      const recentlyAddedRecipient = recipients.find(
+        (r) =>
+          r.email.toLowerCase() === recipientToSave.email.toLowerCase() &&
+          r.idValue === recipientToSave.idValue
+      );
+
+      if (recentlyAddedRecipient) {
+        onRecipientsChange(
+          recipients.map((r) =>
+            r.id === recentlyAddedRecipient.id ? { ...r, savedContactId } : r
+          )
+        );
+      }
+    }
+    setShowSaveConfirmation(false);
+    setRecipientToSave(null);
   };
 
   // Define ID type options
@@ -169,6 +342,8 @@ export default function RecipientStep({
                 isActive={editingRecipientId === recipient.id}
                 onDelete={handleRemoveRecipient}
                 onClick={handleEditRecipient}
+                // Add visual indicator for saved contacts
+                isSaved={Boolean(recipient.savedContactId)}
               />
             ))}
           </div>
@@ -279,6 +454,77 @@ export default function RecipientStep({
           {editingRecipientId ? "Update Recipient" : "Add Recipient"}
         </Button>
       </div>
+
+      {/* Save Recipient Confirmation Modal */}
+      <SaveRecipientConfirmation
+        isOpen={showSaveConfirmation}
+        onClose={() => setShowSaveConfirmation(false)}
+        recipient={recipientToSave}
+        onConfirm={handleConfirmSave}
+      />
+
+      {/* Update Saved Contact Confirmation */}
+      {showUpdateConfirmation && recipientToUpdate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600/50 backdrop-blur-[2px]">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-5 m-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Update Saved Contact
+              </h3>
+              <p className="mt-2 text-sm text-gray-600">
+                Would you like to update this contact in your saved contacts
+                list?
+              </p>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-md mb-5">
+              <div className="space-y-2">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">
+                    Name:
+                  </span>
+                  <p className="text-gray-800">{recipientToUpdate.name}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">
+                    Email:
+                  </span>
+                  <p className="text-gray-800">{recipientToUpdate.email}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">
+                    ID Type:
+                  </span>
+                  <p className="text-gray-800">{recipientToUpdate.idType}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">
+                    ID Value:
+                  </span>
+                  <p className="text-gray-800">{recipientToUpdate.idValue}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleDeclineUpdate}
+                className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Don&apos;t Update
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdateSavedContact}
+                className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#5AC893] border border-transparent rounded-md shadow-sm hover:bg-[#4ba578] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5AC893]"
+              >
+                Update Contact
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   uploadDocument,
@@ -9,8 +9,11 @@ import {
 } from "@/services/ds-api";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import SuccessMessage from "@/components/success/SuccessMessage";
-import MultiStepForm from "@/components/signature/SignatureStepsForm";
+import MultiStepForm, {
+  MultiStepForm as MultiStepFormInterface,
+} from "@/components/signature/SignatureStepsForm";
 import { Recipient } from "@/components/signature/RecipientStep";
+import { SavedRecipient } from "@/components/saved-recipients/SavedRecipientsContext";
 
 // Interface for our updated multi-recipient form data
 interface MultiRecipientFormData {
@@ -19,11 +22,60 @@ interface MultiRecipientFormData {
   signaturePlaceholders: SignaturePlaceholder[];
 }
 
-export default function SignatureForm() {
+interface SignatureFormProps {
+  selectedContact?: SavedRecipient | null;
+  onContactUsed?: () => void;
+  onRecipientsChange?: (recipients: Recipient[]) => void;
+}
+
+export default function SignatureForm({
+  selectedContact,
+  onContactUsed,
+  onRecipientsChange,
+}: SignatureFormProps) {
   const [response, setResponse] = useState<UploadResponse | null>(null);
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [currentFormData, setCurrentFormData] =
+    useState<MultiRecipientFormData | null>(null);
 
+  // Use useRef to hold a reference to the MultiStepForm component
+  const formInstanceRef = useRef<MultiStepFormInterface | null>(null);
+
+  // Handle when a contact is selected from the contacts panel
+  useEffect(() => {
+    if (selectedContact && formInstanceRef.current) {
+      // Get the current step from the form instance
+      const currentStep = formInstanceRef.current.getCurrentStep?.() || 1;
+
+      // Only add the contact if we're on step 1
+      if (currentStep === 1) {
+        const success = formInstanceRef.current.addContactToForm({
+          name: selectedContact.name,
+          email: selectedContact.email,
+          idType: selectedContact.idType,
+          idValue: selectedContact.idValue,
+          savedContactId: selectedContact.id, // Track the source saved contact ID
+        });
+
+        // Notify parent that the contact has been used (regardless of success)
+        if (onContactUsed) {
+          onContactUsed();
+        }
+      } else {
+        // Show an error message if not on step 1
+        alert(
+          "Recipients can only be added in the first step. Please go back to step 1 to add recipients."
+        );
+        if (onContactUsed) {
+          onContactUsed(); // Clear the selected contact
+        }
+      }
+    }
+  }, [selectedContact, onContactUsed]);
+
+  // Send email with QR code to the first recipient
   const sendEmailWithQRCode = async (response: UploadResponse) => {
     try {
       // Find the first recipient by order
@@ -77,6 +129,7 @@ export default function SignatureForm() {
   const handleSubmit = async (formData: MultiRecipientFormData) => {
     try {
       setIsSubmitting(true);
+      setFormError(null);
 
       if (!formData.file) {
         throw new Error("Please select a file to upload");
@@ -86,7 +139,15 @@ export default function SignatureForm() {
         throw new Error("Please add at least one recipient");
       }
 
-      // Convert recipients to API format
+      // Save current form data for parent components
+      setCurrentFormData(formData);
+
+      // Notify parent of recipients change
+      if (onRecipientsChange) {
+        onRecipientsChange(formData.recipients);
+      }
+
+      // Convert recipients to API format - strip out our internal properties like savedContactId
       const apiRecipients = formData.recipients.map((recipient, index) => ({
         id: recipient.id,
         name: recipient.name,
@@ -107,21 +168,51 @@ export default function SignatureForm() {
         ),
       });
 
-      // console.log("Raw API Response:", result);
       setResponse(result);
 
-      // Send email with QR code to all recipients
+      // Send email with QR code to the first recipient
       await sendEmailWithQRCode(result);
     } catch (err) {
       console.error("Error submitting form:", err);
+      setFormError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
       throw err;
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Reset the form to initial state
+  const resetForm = () => {
+    setResponse(null);
+    setEmailStatus(null);
+    setFormError(null);
+    setCurrentFormData(null);
+
+    // Notify parent of empty recipients
+    if (onRecipientsChange) {
+      onRecipientsChange([]);
+    }
+  };
+
+  // Handle ref with a stable callback
+  const setFormRef = (instance: MultiStepFormInterface | null) => {
+    formInstanceRef.current = instance;
+  };
+
+  // Handle recipients change from the form
+  const handleFormUpdate = (formData: MultiRecipientFormData) => {
+    setCurrentFormData(formData);
+
+    // Notify parent of recipients change
+    if (onRecipientsChange) {
+      onRecipientsChange(formData.recipients);
+    }
+  };
+
   return (
-    <div className="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8 border border-gray-200">
+    <div className="w-full p-4 sm:p-6 md:p-8">
       {/* Loading Screen - Shows during form submission */}
       {isSubmitting && <LoadingScreen />}
 
@@ -143,19 +234,27 @@ export default function SignatureForm() {
         </h1>
       </div>
 
+      {/* Form error message */}
+      {formError && (
+        <div className="p-3 mb-6 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+          {formError}
+        </div>
+      )}
+
       {response ? (
-        <div className="py-4 sm:py-6 md:py-8 bg-white">
+        <div className="py-4 sm:py-6 md:py-8">
           <SuccessMessage
             response={response}
             emailStatus={emailStatus}
-            onReset={() => {
-              setResponse(null);
-              setEmailStatus(null);
-            }}
+            onReset={resetForm}
           />
         </div>
       ) : (
-        <MultiStepForm onSubmit={handleSubmit} />
+        <MultiStepForm
+          onSubmit={handleSubmit}
+          ref={setFormRef}
+          onFormUpdate={handleFormUpdate}
+        />
       )}
     </div>
   );

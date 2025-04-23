@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import "./globals.css";
 import Navbar from "@/components/navbar/Navbar";
+import { SavedRecipientsProvider } from "@/components/saved-recipients/SavedRecipientsContext";
 
 export const metadata = {
   title: "Bhutan NDI Digital Signature Portal",
@@ -17,8 +18,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="bg-[#F8F8FF] min-h-screen">
-        <Navbar />
-        {children}
+        <SavedRecipientsProvider>
+          <Navbar />
+          {children}
+        </SavedRecipientsProvider>
       </body>
     </html>
   );
