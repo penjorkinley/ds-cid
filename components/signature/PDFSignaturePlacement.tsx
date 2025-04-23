@@ -357,6 +357,19 @@ export default function PDFSignaturePlacement({
     (p) => p.pageNumber === currentPage
   );
 
+  //check for all recipients having placeholders
+  const areAllRecipientsAssigned = () => {
+    // Create a set of all recipient IDs who have placeholders
+    const assignedRecipientIds = new Set(
+      placeholders.map((placeholder) => placeholder.recipientId)
+    );
+
+    // Check if all recipients have at least one placeholder
+    return recipients.every((recipient) =>
+      assignedRecipientIds.has(recipient.id)
+    );
+  };
+
   return (
     <div className="flex flex-col">
       <ResponsiveControlPanel
@@ -368,6 +381,7 @@ export default function PDFSignaturePlacement({
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         placeholderCount={getPlaceholderCount()}
+        allRecipientsAssigned={areAllRecipientsAssigned()}
       />
 
       <div

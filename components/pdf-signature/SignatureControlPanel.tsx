@@ -10,6 +10,7 @@ interface ResponsiveControlPanelProps {
   currentPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   placeholderCount: number;
+  allRecipientsAssigned?: boolean; // Add this new prop
 }
 
 export const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
@@ -21,12 +22,14 @@ export const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
   currentPage,
   setCurrentPage,
   placeholderCount,
+  allRecipientsAssigned = false, // Default to false
 }) => {
   return (
     <div className="flex flex-col space-y-4 mb-4">
       {/* Zoom controls */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center space-x-1 sm:space-x-2">
+          {/* Zoom controls remain the same */}
           <button
             type="button"
             onClick={() => setScale((prev) => Math.max(0.3, prev - 0.1))}
@@ -57,10 +60,18 @@ export const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
             Fit
           </button>
         </div>
+
+        {/* Update the Add Signatory button to be disabled when all recipients are assigned */}
         <button
           type="button"
           onClick={handleAddSignatory}
-          className="px-3 sm:px-4 py-2 text-white bg-[#5AC893] rounded hover:bg-[#4ba578] transition-colors text-sm sm:text-base flex items-center cursor-pointer"
+          disabled={allRecipientsAssigned}
+          className={`px-3 sm:px-4 py-2 text-white rounded transition-colors text-sm sm:text-base flex items-center
+            ${
+              allRecipientsAssigned
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#5AC893] hover:bg-[#4ba578] cursor-pointer"
+            }`}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -74,7 +85,9 @@ export const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
               clipRule="evenodd"
             />
           </svg>
-          Add {PDFUtils.getOrdinalSuffix(placeholderCount)} signatory
+          {allRecipientsAssigned
+            ? "All signatories added"
+            : `Add ${PDFUtils.getOrdinalSuffix(placeholderCount)} signatory`}
         </button>
       </div>
 
