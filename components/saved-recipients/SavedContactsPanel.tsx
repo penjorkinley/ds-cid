@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { SavedRecipient, useSavedRecipients } from "./SavedRecipientsContext";
 import { Recipient } from "@/components/signature/RecipientStep";
 import DeleteContactConfirmation from "./DeleteContactConfirmation";
+import AlertModal from "@/components/ui/AlertModal"; // Import AlertModal
 
 interface SavedContactsPanelProps {
   onSelectContact: (contact: SavedRecipient) => void;
@@ -23,6 +24,10 @@ export default function SavedContactsPanel({
   const [contactToDelete, setContactToDelete] = useState<SavedRecipient | null>(
     null
   );
+
+  // Add state for AlertModal
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   // Implement debounce for search to improve performance
   useEffect(() => {
@@ -90,10 +95,11 @@ export default function SavedContactsPanel({
   // Handle contact selection with duplicate check
   const handleContactSelect = (contact: SavedRecipient) => {
     if (isContactAlreadyAdded(contact)) {
-      // You could show a toast or some visual feedback here
-      alert(
+      // Replace alert with modal
+      setAlertMessage(
         `Contact "${contact.name}" is already added to the recipients list.`
       );
+      setShowAlertModal(true);
       return;
     }
 
@@ -277,6 +283,15 @@ export default function SavedContactsPanel({
         onClose={() => setShowDeleteConfirmation(false)}
         contact={contactToDelete}
         onConfirm={confirmDeleteContact}
+      />
+
+      {/* Add Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title="Contact Already Added"
+        message={alertMessage}
+        variant="info"
       />
     </div>
   );

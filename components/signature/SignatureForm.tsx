@@ -14,6 +14,7 @@ import MultiStepForm, {
 } from "@/components/signature/SignatureStepsForm";
 import { Recipient } from "@/components/signature/RecipientStep";
 import { SavedRecipient } from "@/components/saved-recipients/SavedRecipientsContext";
+import AlertModal from "@/components/ui/AlertModal"; // Import AlertModal
 
 // Interface for our updated multi-recipient form data
 interface MultiRecipientFormData {
@@ -40,6 +41,11 @@ export default function SignatureForm({
   const [currentFormData, setCurrentFormData] =
     useState<MultiRecipientFormData | null>(null);
 
+  // Add state for AlertModal
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertTitle, setAlertTitle] = useState("");
+
   // Use useRef to hold a reference to the MultiStepForm component
   const formInstanceRef = useRef<MultiStepFormInterface | null>(null);
 
@@ -64,10 +70,13 @@ export default function SignatureForm({
           onContactUsed();
         }
       } else {
-        // Show an error message if not on step 1
-        alert(
+        // Replace alert with modal
+        setAlertTitle("Wrong Step");
+        setAlertMessage(
           "Recipients can only be added in the first step. Please go back to step 1 to add recipients."
         );
+        setShowAlertModal(true);
+
         if (onContactUsed) {
           onContactUsed(); // Clear the selected contact
         }
@@ -256,6 +265,15 @@ export default function SignatureForm({
           onFormUpdate={handleFormUpdate}
         />
       )}
+
+      {/* Add Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertTitle}
+        message={alertMessage}
+        variant="warning"
+      />
     </div>
   );
 }
