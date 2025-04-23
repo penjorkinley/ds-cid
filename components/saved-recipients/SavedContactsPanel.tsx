@@ -76,17 +76,14 @@ export default function SavedContactsPanel({
     }
   };
 
-  // Check if a contact is already in the recipients list
+  // Check if a contact is already in the recipients list - EXACT MATCH VERSION
   const isContactAlreadyAdded = (contact: SavedRecipient) => {
     return currentRecipients.some((recipient) => {
-      // Check if this recipient originated from this saved contact
-      if (recipient.savedContactId === contact.id) {
-        return true;
-      }
-
-      // Also check by email or ID value for historical compatibility
+      // A contact is only considered "already added" if ALL details match exactly
       return (
-        recipient.email.toLowerCase() === contact.email.toLowerCase() ||
+        recipient.name === contact.name &&
+        recipient.email.toLowerCase() === contact.email.toLowerCase() &&
+        recipient.idType === contact.idType &&
         recipient.idValue === contact.idValue
       );
     });
@@ -94,15 +91,32 @@ export default function SavedContactsPanel({
 
   // Handle contact selection with duplicate check
   const handleContactSelect = (contact: SavedRecipient) => {
-    if (isContactAlreadyAdded(contact)) {
-      // Replace alert with modal
-      setAlertMessage(
-        `Contact "${contact.name}" is already added to the recipients list.`
-      );
+    // Check if the email or CID is already in use in the current recipients
+    const emailExists = currentRecipients.some(
+      (r) => r.email.toLowerCase() === contact.email.toLowerCase()
+    );
+
+    const cidExists = currentRecipients.some(
+      (r) => r.idValue === contact.idValue
+    );
+
+    if (emailExists || cidExists) {
+      // Provide a more specific message
+      let message = "";
+      if (emailExists && cidExists) {
+        message = `A recipient with the same email (${contact.email}) and ${contact.idType} (${contact.idValue}) already exists.`;
+      } else if (emailExists) {
+        message = `A recipient with the email ${contact.email} already exists.`;
+      } else {
+        message = `A recipient with the ${contact.idType} ${contact.idValue} already exists.`;
+      }
+
+      setAlertMessage(message);
       setShowAlertModal(true);
       return;
     }
 
+    // Otherwise, it's safe to add
     onSelectContact(contact);
   };
 
@@ -285,9 +299,9 @@ export default function SavedContactsPanel({
       <AlertModal
         isOpen={showAlertModal}
         onClose={() => setShowAlertModal(false)}
-        title="Contact Already Added"
+        title="Duplicate Information"
         message={alertMessage}
-        variant="info"
+        variant="warning"
       />
     </div>
   );
