@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
+import Modal from "@/components/ui/Modal";
 import { Recipient } from "@/components/signature/RecipientStep";
 
 interface SaveRecipientConfirmationProps {
@@ -16,51 +17,45 @@ export default function SaveRecipientConfirmation({
   recipient,
   onConfirm,
 }: SaveRecipientConfirmationProps) {
-  // IMPORTANT: All hooks must be called before any conditional returns
-  useEffect(() => {
-    // Only apply scroll locking if modal is open
-    if (!isOpen) return;
-
-    // Store the original overflow style to restore it exactly as it was
-    const originalOverflow = document.body.style.overflow;
-
-    // Lock scrolling
-    document.body.style.overflow = "hidden";
-
-    // Ensure we clean up properly even if component unmounts unexpectedly
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [isOpen]); // Re-run when isOpen changes
-
-  // After all hooks, we can have conditional returns
-  if (!isOpen || !recipient) return null;
-
-  // Ensure body can scroll again when modal closes via buttons
-  const handleClose = () => {
-    document.body.style.overflow = "auto";
-    onClose();
-  };
+  if (!recipient) return null;
 
   const handleConfirm = () => {
     onConfirm();
-    handleClose();
+    onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600/50 backdrop-blur-[2px]">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-5 m-4">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Save Recipient
-          </h3>
-          <p className="mt-2 text-sm text-gray-600">
-            Would you like to save this recipient to your contacts for future
-            use?
-          </p>
-        </div>
+  const ModalFooter = (
+    <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+      <button
+        type="button"
+        onClick={onClose}
+        className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+      >
+        Don&apos;t Save
+      </button>
+      <button
+        type="button"
+        onClick={handleConfirm}
+        className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#5AC893] border border-transparent rounded-md shadow-sm hover:bg-[#4ba578] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5AC893]"
+      >
+        Save to Contacts
+      </button>
+    </div>
+  );
 
-        <div className="bg-gray-50 p-4 rounded-md mb-5">
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Save Recipient"
+      footer={ModalFooter}
+    >
+      <div>
+        <p className="text-sm text-gray-600 mb-4">
+          Would you like to save this recipient to your contacts for future use?
+        </p>
+
+        <div className="bg-gray-50 p-4 rounded-md">
           <div className="space-y-2">
             <div>
               <span className="text-sm font-medium text-gray-500">Name:</span>
@@ -84,24 +79,7 @@ export default function SaveRecipientConfirmation({
             </div>
           </div>
         </div>
-
-        <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-          >
-            Don&apos;t Save
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#5AC893] border border-transparent rounded-md shadow-sm hover:bg-[#4ba578] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5AC893]"
-          >
-            Save to Contacts
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
