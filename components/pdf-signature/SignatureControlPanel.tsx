@@ -66,12 +66,12 @@ export const ResponsiveControlPanel: React.FC<ResponsiveControlPanelProps> = ({
           type="button"
           onClick={handleAddSignatory}
           disabled={allRecipientsAssigned}
-          className={`px-3 sm:px-4 py-2 text-white rounded transition-colors text-sm sm:text-base flex items-center
-            ${
-              allRecipientsAssigned
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-[#5AC893] hover:bg-[#4ba578] cursor-pointer"
-            }`}
+          className={`px-3 sm:px-4 py-2 rounded transition-colors text-sm sm:text-base flex items-center
+    ${
+      allRecipientsAssigned
+        ? "bg-[#5AC893] text-white opacity-60 cursor-not-allowed"
+        : "bg-[#5AC893] text-white hover:bg-[#4ba578] cursor-pointer"
+    }`}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
