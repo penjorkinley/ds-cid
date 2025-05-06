@@ -1,18 +1,5 @@
 import QRCode from "qrcode";
 
-// export async function generateQRCode(
-//   data: string,
-//   baseUrl: string = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-// ): Promise<Buffer> {
-//   try {
-//     const url = `${baseUrl}/view-document?data=${encodeURIComponent(data)}`;
-//     return await QRCode.toBuffer(url);
-//   } catch (error) {
-//     console.error("Error generating QR code:", error);
-//     throw new Error("Failed to generate QR code");
-//   }
-// }
-
 export interface QRCodeResult {
   buffer: Buffer;
   apiUrl: string;
@@ -35,7 +22,7 @@ export async function generateQRCode(
     // Create the deep link URL
     const deepLinkBaseUrl =
       process.env.DEEPLINK_BASE_URL || "https://bhutanndi.app.link/?t=";
-    const deepLinkUrl = `${deepLinkBaseUrl}${encodeURIComponent(data)}`;
+    const deepLinkUrl = `${deepLinkBaseUrl}${encodeURIComponent(apiUrl)}`;
 
     return {
       buffer,

@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
                 <div class="option-label">OPTION 1</div>
                 <div>Click the button below to open the Bhutan NDI Wallet directly on this device</div>
                 <a href="${deepLinkUrl}" class="button">
-                  OPEN BHUTAN NDI WALLLET
+                  OPEN BHUTAN NDI WALLET
                 </a>
               </div>
               
