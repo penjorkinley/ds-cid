@@ -24,56 +24,6 @@ export default function SignatureForm() {
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const sendEmailWithQRCode = async (response: UploadResponse) => {
-    try {
-      // Find the first recipient by order
-      const orderedRecipients = [...response.recipients].sort(
-        (a, b) => (a.order || 0) - (b.order || 0)
-      );
-      const firstRecipient = orderedRecipients[0];
-
-      if (!firstRecipient) {
-        throw new Error("No recipients found in the response");
-      }
-
-      setEmailStatus(
-        `Sending email to first signatory (${firstRecipient.name})...`
-      );
-
-      // Create a recipient-specific response object
-      const recipientResponse = {
-        ...response,
-        currentRecipient: firstRecipient, // Add the current recipient to the response
-      };
-
-      const emailResponse = await fetch("/api/send-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ response: recipientResponse }),
-      });
-
-      if (!emailResponse.ok) {
-        const errorData = await emailResponse.json();
-        throw new Error(
-          errorData.message || `Server error: ${emailResponse.status}`
-        );
-      }
-
-      setEmailStatus(
-        `Email sent successfully to ${firstRecipient.name} (${firstRecipient.email})`
-      );
-    } catch (err) {
-      console.error("Error sending email:", err);
-      setEmailStatus(
-        err instanceof Error
-          ? `Failed to send email: ${err.message}`
-          : "Failed to send email"
-      );
-    }
-  };
-
   const handleSubmit = async (formData: MultiRecipientFormData) => {
     try {
       setIsSubmitting(true);
@@ -95,6 +45,10 @@ export default function SignatureForm() {
         order: index + 1,
       }));
 
+      // Set initial email status
+      const firstRecipient = formData.recipients[0];
+      setEmailStatus(`Sending email to ${firstRecipient.name}...`);
+
       // Send data to the API using the new structure
       const result = await uploadDocument({
         recipients: apiRecipients,
@@ -107,13 +61,21 @@ export default function SignatureForm() {
         ),
       });
 
-      // console.log("Raw API Response:", result);
+      // Backend handles sending emails to all signatories including the first one
       setResponse(result);
 
-      // Send email with QR code to all recipients
-      await sendEmailWithQRCode(result);
+      // Update email status to indicate success
+      const totalRecipients = formData.recipients.length;
+      if (totalRecipients === 1) {
+        setEmailStatus(`Email sent successfully to ${firstRecipient.name}`);
+      } else {
+        setEmailStatus(
+          `Email sent to first signatory (${firstRecipient.name}). Subsequent emails will be sent automatically after each signature.`
+        );
+      }
     } catch (err) {
       console.error("Error submitting form:", err);
+      setEmailStatus("Failed to send email. Please try again.");
       throw err;
     } finally {
       setIsSubmitting(false);
