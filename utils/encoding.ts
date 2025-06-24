@@ -25,7 +25,8 @@ export function encodeResponseData(
         id: currentRecipient.id,
         name: currentRecipient.name,
         email: currentRecipient.email,
-        cid: currentRecipient.cid,
+        idType: currentRecipient.idType,
+        idValue: currentRecipient.idValue,
         order: currentRecipient.order,
         recipientId: currentRecipient.recipientId,
       }

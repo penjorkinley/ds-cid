@@ -13,7 +13,8 @@ export interface Recipient {
   id: string;
   name: string;
   email: string;
-  cid: string;
+  idType: string;
+  idValue: string;
   order: number;
   recipientId?: string;
   signatureCoordinates?: SignaturePlaceholder;

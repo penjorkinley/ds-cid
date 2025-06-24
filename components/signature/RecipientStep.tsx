@@ -148,8 +148,10 @@ export default function RecipientStep({
   // Define ID type options
   const idTypeOptions = [
     { value: "CID No", label: "CID No" },
+    { value: "RCSC EID", label: "RCSC EID" },
+    { value: "DHI EID", label: "DHI EID" },
+    { value: "TTPL EID", label: "TTPL EID" },
     { value: "Passport No", label: "Passport No" },
-    { value: "EID", label: "EID" },
   ];
 
   return (

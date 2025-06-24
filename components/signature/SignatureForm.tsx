@@ -41,7 +41,8 @@ export default function SignatureForm() {
         id: recipient.id,
         name: recipient.name,
         email: recipient.email,
-        cid: recipient.idValue,
+        idType: recipient.idType,
+        idValue: recipient.idValue,
         order: index + 1,
       }));
 
