@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   // Enable standalone mode for Docker deployment
@@ -28,6 +29,12 @@ const nextConfig: NextConfig = {
   
   // Webpack configuration for additional optimizations
   webpack: (config, { isServer }) => {
+    // Ensure path aliases work correctly in Docker
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname),
+    };
+    
     // Additional webpack configurations if needed for your PDF processing
     if (!isServer) {
       config.resolve.fallback = {
